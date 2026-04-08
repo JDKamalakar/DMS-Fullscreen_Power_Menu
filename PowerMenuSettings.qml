@@ -2,25 +2,29 @@ import QtQuick
 import qs.Modules.Plugins
 
 PluginSettings {
-	pluginId: "dmsPowerMenu"
+	pluginId: "dmsFullScreenPowerMenu"
 
 	StringSetting {
-		name: "logoutCommand"
+		settingKey: "logoutCommand"
+		label: "Log Out Command"
 		description: "Command to log out of the session"
 		defaultValue: "loginctl terminate-session"
 	}
 
 	StringSetting {
-		name: "lockCommand"
+		settingKey: "lockCommand"
+		label: "Lock Screen Command"
 		description: "Command to lock the screen"
 		defaultValue: "loginctl lock-session"
 	}
 
 	SliderSetting {
-		name: "blurAmount"
-		description: "Background dim intensity (0.0 – 1.0)"
-		defaultValue: 0.75
-		minimumValue: 0.0
-		maximumValue: 1.0
+		settingKey: "dimOpacity"
+		label: "Background Dim Intensity"
+		description: "How dark the background dims when the menu is open (0 = transparent, 100 = fully black)"
+		defaultValue: 75
+		minimum: 0
+		maximum: 100
+		unit: "%"
 	}
 }

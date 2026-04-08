@@ -3,20 +3,20 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Widgets
+import Quickshell.Widgets
 import qs.Common
-import qs.Services
-import qs.Widgets
 import qs.Modules.Plugins
 
 PluginComponent {
 	id: root
 
 	// -------------------------------------------------------------------------
-	// IPC — trigger via: dms ipc call dmsPowerMenu toggle
+	// IPC — trigger via: dms ipc dmsFullScreenPowerMenu toggle
 	// -------------------------------------------------------------------------
 
 	IpcHandler {
-		target: "dmsPowerMenu"
+		target: "dmsFullScreenPowerMenu"
 
 		function toggle(): string {
 			root.toggle();
@@ -56,7 +56,7 @@ PluginComponent {
 		visible: false
 		color: "transparent"
 
-		WlrLayershell.namespace: "dms:plugins:dmsPowerMenu"
+		WlrLayershell.namespace: "dms:plugins:dmsFullScreenPowerMenu"
 		WlrLayershell.layer: WlrLayershell.Overlay
 		WlrLayershell.exclusiveZone: -1
 		WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -72,7 +72,7 @@ PluginComponent {
 		Rectangle {
 			anchors.fill: parent
 			color: "#000000"
-			opacity: overlay.visible ? (pluginData && pluginData.blurAmount != null ? pluginData.blurAmount : 0.75) : 0
+			opacity: overlay.visible ? (pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.75) : 0
 			Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
 
 			MouseArea {
@@ -269,6 +269,6 @@ PluginComponent {
 	}
 
 	Component.onCompleted: {
-		console.info("dmsPowerMenu: daemon loaded — use 'dms ipc call dmsPowerMenu toggle' to open");
+		console.info("dmsFullScreenPowerMenu: daemon loaded — use 'dms ipc dmsFullScreenPowerMenu toggle' to open");
 	}
 }
