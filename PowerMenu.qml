@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
+import qs.Widgets
 import qs.Modules.Plugins
 
 PluginComponent {
@@ -72,25 +73,13 @@ PluginComponent {
 		Rectangle {
 			anchors.fill: parent
 			color: "#000000"
-			opacity: overlay.visible ? (pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.90) : 0
+			opacity: overlay.visible ? (pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.60) : 0
 			Behavior on opacity { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
 
 			MouseArea {
 				anchors.fill: parent
 				onClicked: root.close()
 			}
-		}
-
-		DropShadow {
-			id: menuCardShadow
-			anchors.fill: menuCard
-			source: menuCard
-			verticalOffset: 6
-			radius: 20
-			samples: 41
-			color: Qt.rgba(0, 0, 0, overlay.visible ? 0.35 : 0.0)
-			transparentBorder: true
-			Behavior on color { ColorAnimation { duration: 300 } }
 		}
 
 		// Power Menu Card
@@ -103,10 +92,27 @@ PluginComponent {
 			color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity / 100 : 0.20)
 			border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.20) // Use Theme.primary for the border as well
 
-			scale: overlay.visible ? 1.0 : 0.9
+			layer.enabled: true
+			layer.effect: DropShadow {
+				verticalOffset: 6
+				radius: 20
+				samples: 41
+				color: Qt.rgba(0, 0, 0, overlay.visible ? 0.35 : 0.0)
+				transparentBorder: true
+			}
+
+			scale: overlay.visible ? 1.0 : 0.95
 			opacity: overlay.visible ? 1.0 : 0.0
-			Behavior on scale   { NumberAnimation { duration: 600; easing.type: Easing.OutElastic; easing.overshoot: 1.2 } }
-			Behavior on opacity { NumberAnimation { duration: 300 } }
+
+			transform: [
+				Translate {
+					y: overlay.visible ? 0 : 30
+					Behavior on y { NumberAnimation { duration: 400; easing.type: Easing.OutQuart } }
+				}
+			]
+
+			Behavior on scale   { NumberAnimation { duration: 400; easing.type: Easing.OutQuart } }
+			Behavior on opacity { NumberAnimation { duration: 250 } }
 			Behavior on color   { ColorAnimation { duration: 300 } }
 			Behavior on border.color { ColorAnimation { duration: 300 } }
 
@@ -116,7 +122,7 @@ PluginComponent {
 			RowLayout {
 				id: mainRow
 				anchors.centerIn: parent
-				spacing: 20
+				spacing: 12
 
 				PowerButton {
 					id: lockBtn
@@ -240,6 +246,8 @@ PluginComponent {
 	Process { id: lockProc }
 	Process { id: dmsRestartProc }
 
+
+
 	// -------------------------------------------------------------------------
 	// POWER BUTTON COMPONENT
 	// -------------------------------------------------------------------------
@@ -266,7 +274,7 @@ PluginComponent {
 			Translate {
 				id: hoverTranslate
 				y: ma.containsMouse ? -12 : 0
-				Behavior on y { NumberAnimation { duration: 400; easing.type: Easing.OutBack; easing.overshoot: 1.5 } }
+				Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 			},
 			Scale {
 				id: clickScale
@@ -274,7 +282,7 @@ PluginComponent {
 				origin.y: height / 2
 				xScale: ma.pressed ? 0.92 : 1.0
 				yScale: xScale
-				Behavior on xScale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+				Behavior on xScale { NumberAnimation { duration: 80; easing.type: Easing.OutCubic } }
 			}
 		]
 
@@ -282,24 +290,24 @@ PluginComponent {
 			id: btnBg
 			anchors.fill: parent
 
-			property real defaultRadius: isPrimary ? 24 : 16
-			property real hoverRadius: 28
+			property real defaultRadius: 16
+			property real hoverRadius: 70
 
 			property real tlr: ma.containsMouse ? hoverRadius : (isFirst ? 28 : defaultRadius)
 			property real tlrAnim: tlr
-			Behavior on tlrAnim { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
+			Behavior on tlrAnim { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
 			property real trr: ma.containsMouse ? hoverRadius : (isLast ? 28 : defaultRadius)
 			property real trrAnim: trr
-			Behavior on trrAnim { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
+			Behavior on trrAnim { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
 			property real brr: ma.containsMouse ? hoverRadius : (isLast ? 28 : defaultRadius)
 			property real brrAnim: brr
-			Behavior on brrAnim { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
+			Behavior on brrAnim { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
 			property real blr: ma.containsMouse ? hoverRadius : (isFirst ? 28 : defaultRadius)
 			property real blrAnim: blr
-			Behavior on blrAnim { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
+			Behavior on blrAnim { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
 			property color paintColor: isPrimary 
 				? (ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor)
@@ -309,8 +317,8 @@ PluginComponent {
 				? Qt.rgba(0.94, 0.26, 0.26, 0.3) 
 				: (ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
 
-			Behavior on paintColor  { ColorAnimation { duration: 300 } }
-			Behavior on paintBorder { ColorAnimation { duration: 300 } }
+			Behavior on paintColor  { ColorAnimation { duration: 150 } }
+			Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
 			onTlrAnimChanged: btnBg.requestPaint()
 			onTrrAnimChanged: btnBg.requestPaint()
@@ -376,7 +384,7 @@ PluginComponent {
 						}
 
 						// Animate baseline radius for morphing effect
-						Behavior on radius { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
+						Behavior on radius { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 					}
 
 					// Dynamic Icon wrapper based on buttonId
@@ -396,7 +404,7 @@ PluginComponent {
 								origin.x: 18; origin.y: 18
 								xScale: ma.containsMouse ? 1.1 : 1.0
 								yScale: xScale
-								Behavior on xScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+								Behavior on xScale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 							},
 							Translate {
 								id: iconTranslate
@@ -412,7 +420,7 @@ PluginComponent {
 							font.family: "Material Symbols Rounded"
 							font.pixelSize: 36
 							color: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9))
-							Behavior on color { ColorAnimation { duration: 300 } }
+							Behavior on color { ColorAnimation { duration: 150 } }
 						}
 
 						Image {
@@ -428,7 +436,7 @@ PluginComponent {
 							anchors.fill: urlIconSrc
 							source: urlIconSrc
 							color: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9))
-							Behavior on color { ColorAnimation { duration: 300 } }
+							Behavior on color { ColorAnimation { duration: 150 } }
 						}
 
 						// Unified Wiggle on all icons
@@ -454,14 +462,14 @@ PluginComponent {
 					implicitWidth: labelText.implicitWidth
 					implicitHeight: labelText.implicitHeight
 					
-					Text {
+					StyledText {
 						id: labelText
 						anchors.centerIn: parent
 						text: label
 						color: ma.containsMouse ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7))
 						font.pixelSize: 14
 						font.weight: Font.Medium
-						Behavior on color { ColorAnimation { duration: 300 } }
+						Behavior on color { ColorAnimation { duration: 150 } }
 					}
 				}
 
@@ -477,16 +485,16 @@ PluginComponent {
 					border.color: ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
 					border.width: 1
 					
-					Behavior on color { ColorAnimation { duration: 300 } }
-					Behavior on border.color { ColorAnimation { duration: 300 } }
+					Behavior on color { ColorAnimation { duration: 150 } }
+					Behavior on border.color { ColorAnimation { duration: 150 } }
 
-					Text {
+					StyledText {
 						anchors.centerIn: parent
 						text: shortcutKey
 						color: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4))
 						font.pixelSize: 11
 						font.weight: Font.Bold
-						Behavior on color { ColorAnimation { duration: 300 } }
+						Behavior on color { ColorAnimation { duration: 150 } }
 					}
 				}
 			}

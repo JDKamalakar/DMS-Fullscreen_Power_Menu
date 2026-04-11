@@ -130,7 +130,7 @@ PluginSettings {
                             name: "restart_alt"
                             size: 22
                             anchors.verticalCenter: parent.verticalCenter
-                            opacity: dimOpacitySlider.value !== 90 ? 0.8 : 0.0
+                            opacity: dimOpacitySlider.value !== 60 ? 0.8 : 0.0
                             Behavior on opacity { NumberAnimation { duration: 200 } }
                             NumberAnimation {
                                 id: dimOpacityAnim
@@ -142,7 +142,7 @@ PluginSettings {
                             }
                             MouseArea {
                                 anchors.fill: parent
-                                enabled: dimOpacitySlider.value !== 90
+                                enabled: dimOpacitySlider.value !== 60
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     dimOpacityAnim.restart();
@@ -153,7 +153,7 @@ PluginSettings {
                     }
                     DankSlider {
                         id: dimOpacitySlider
-                        property int defaultValue: 90
+                        property int defaultValue: 60
                         property string settingKey: "dimOpacity"
                         width: parent.width
                         minimum: 0
@@ -198,7 +198,7 @@ PluginSettings {
             // -----------------------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingM
                 Row {
                     width: parent.width
                     spacing: Theme.spacingM
@@ -233,7 +233,7 @@ PluginSettings {
             // -----------------------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingM
                 Row {
                     width: parent.width
                     spacing: Theme.spacingM
@@ -268,7 +268,7 @@ PluginSettings {
             // -----------------------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingM
                 Row {
                     width: parent.width
                     spacing: Theme.spacingM
@@ -303,7 +303,7 @@ PluginSettings {
             // -----------------------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingM
                 Row {
                     width: parent.width
                     spacing: Theme.spacingM
@@ -338,7 +338,7 @@ PluginSettings {
             // -----------------------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingM
                 Row {
                     width: parent.width
                     spacing: Theme.spacingM
@@ -373,7 +373,7 @@ PluginSettings {
             // -----------------------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingM
                 Row {
                     width: parent.width
                     spacing: Theme.spacingM
