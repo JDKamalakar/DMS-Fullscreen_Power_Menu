@@ -23,14 +23,14 @@ Upgrade your session management with a seamless, highly customizable, and fluidl
 ### 🖥️ Main Display
 | Fullscreen Overlay -- Horizontal |
 | :--- |
-| <img width="2438" height="1296" alt="Power_Menu_Horizontal" src="https://github.com/user-attachments/assets/85064b07-be46-42bc-abf0-f3e729c73c95" />|
+| <img width="2438" height="1296" alt="Power_Menu_Horizontal" src="assets/Main_UI.png" />|
 | Fullscreen Overlay -- Vertical |
-| <img width="310" height="620" alt="Power_Menu_Vertical" src="https://github.com/user-attachments/assets/3485cb3b-a13e-44d7-95c1-216632713970" /> |
+| <img width="310" height="620" alt="Power_Menu_Vertical" src="assets/Main_UI_Vertical.png" /> |
 
 ### ⚙️ Configuration
 | Settings UI |
 | :--- |
-| <img width="310" height="620" alt="Settings" src="https://github.com/user-attachments/assets/68ceb157-b2e0-409b-a494-a01514ecb92f" /> |
+| <img width="310" height="620" alt="Settings" src="assets/Settings.png" /> |
 
 ---
 
