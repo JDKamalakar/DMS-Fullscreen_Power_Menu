@@ -1,72 +1,70 @@
-# <img width="24" height="24" alt="image" src="https://raw.githubusercontent.com/AvengeMedia/DankMaterialShell/f2df53afcd0870445e7f3cd45e91ac135a04442e/assets/danklogo.svg" /> DMS-Fullscreen_Power_Menu
+<div align="center">
 
-[![DMS Version](https://img.shields.io/badge/DMS-Compatible-purple.svg)](https://github.com/DankMaterialShell)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/graphs/commit-activity)
+<a href="https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu">
+    <img src="https://raw.githubusercontent.com/AvengeMedia/DankMaterialShell/f2df53afcd0870445e7f3cd45e91ac135a04442e/assets/danklogo.svg" alt="Power Menu logo" title="Power Menu logo" width="80"/>
+</a>
 
-An elegant implementation of a **Material 3-inspired Fullscreen Power Menu**, specifically designed for the **Dank Material Shell** (DMS) environment.
+# [DMS-Fullscreen_Power_Menu](#)
 
-Upgrade your session management with a seamless, highly customizable, and fluidly animated overlay to lock, sleep, reboot, or power off your desktop.
+### Premium Session Management
+Material 3-inspired Fullscreen Power Menu for Dank Material Shell – lock, sleep, reboot, or power off with fluid animations.
 
----
+[![DMS Compatible](https://img.shields.io/badge/DMS-Compatible-purple.svg?labelColor=27303D)](https://github.com/Dank-Material-Shell)
+[![License](https://img.shields.io/badge/License-DMS-blue.svg?labelColor=27303D&color=0877d2)](https://github.com/DankMaterialShell)
+[![Maintenance Status](https://img.shields.io/badge/Status-Maintained-green.svg?labelColor=27303D&color=946300)](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/graphs/commit-activity)
 
-## ✨ Features
+## Download
 
-* **Beautiful UI:** Polished Material 3 design with highly responsive click/hover animations and fluid morphing pills.
-* **Keyboard Shortcuts:** Lightning-fast navigation using designated shortcut keys (`L` for Lock, `R` for Restart, etc.) without needing a mouse.
-* **Smart Memory Tracking:** Remembers your last used action to provide visual prominence to your most-used power command instantly upon opening.
-* **Customizable Settings:** A dedicated settings panel to tweak the background dim opacity, backdrop coloring, and system execution commands.
+[![DMS Plugin Gallery](https://img.shields.io/badge/DMS-Plugin%20Gallery-06599d?style=flat-square&logo=linux&logoColor=white)](https://danklinux.com/plugins)
 
----
 
-## 📸 Interface Preview
+*Requires Dank Material Shell (DMS) 1.0 or higher.*
 
-### 🖥️ Main Display
-| Fullscreen Overlay -- Horizontal |
-| :--- |
-| <img width="2438" height="1296" alt="Power_Menu_Horizontal" src="assets/Main_UI.png" />|
-| Fullscreen Overlay -- Vertical |
-| <img width="310" height="620" alt="Power_Menu_Vertical" src="assets/Main_UI_Vertical.png" /> |
+## Features
 
-### ⚙️ Configuration
-| Settings UI |
-| :--- |
-| <img width="310" height="620" alt="Settings" src="assets/Settings.png" /> |
+<div align="left">
 
----
+* **Beautiful UI**: Polished Material 3 design with highly responsive click/hover animations and fluid morphing pills.
+* **Keyboard Shortcuts**: Lightning-fast navigation using designated shortcut keys (`L` for Lock, `R` for Restart, etc.) without needing a mouse.
+* **Smart Memory Tracking**: Remembers your last used action to provide visual prominence to your most-used power command instantly upon opening.
+* **Customizable Settings**: A dedicated settings panel to tweak the background dim opacity, backdrop coloring, and system execution commands.
 
-## 🛠️ Installation
+</div>
 
-### 🚀 Recommended: DMS Plugin Manager
-The easiest way to install and stay updated:
-1. Open your **DMS Settings**.
-2. Navigate to the **Plugin Manager** tab.
-3. Search for `DMS-Fullscreen_Power_Menu` and click **Install**.
-4. Alternatively, browse the [Dank Linux Plugin Gallery](https://danklinux.com/plugins#/).
+## Interface
 
-### 🛠️ Manual Installation
-For developers or users who want the latest edge builds:
-1. Clone this repository into your DMS extensions/plugins folder:
-   ```bash
-   git clone https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu.git
-   ```
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/85064b07-be46-42bc-abf0-f3e729c73c95" width="45%" />
+  <img src="https://github.com/user-attachments/assets/3485cb3b-a13e-44d7-95c1-216632713970" width="45%" />
+</div>
 
----
+## Configuration
 
-## 🐛 Feedback & Contributions
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/68ceb157-b2e0-409b-a494-a01514ecb92f" width="80%" />
+</div>
 
-Found a bug or have a feature request? Let’s make this better together.
+## Contributing
 
-* **Report Issues:** [GitHub Issues](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/issues/new/choose)
-* **Contributions:** Pull requests are welcome! Please ensure your code follows the shell's design guidelines.
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
----
+Before reporting a new issue, take a look at the [FAQ](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/wiki), the [changelog](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/releases) and the already opened [issues](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/issues).
 
-*Created with ❤️ for the Dank Material Shell Community.*
 
-## 📜 License
+### Credits
+
+Built with ❤️ for the [Dank Material Shell](https://github.com/DankMaterialShell) community.
+
+<a href="https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=JDKamalakar/DMS-Fullscreen_Power_Menu" alt="Power Menu contributors" title="Power Menu contributors" width="100"/>
+</a>
+
+### Disclaimer
+
+This application is an independent utility for Dank Material Shell.
+
+### 📜 License
 
 Part of DankMaterialShell. Check the main repository for license information.
 
-## 🤝 Credits
-
-Built for [DankMaterialShell](https://github.com/DankMaterialShell)
+</div>
