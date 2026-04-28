@@ -14,6 +14,14 @@ PluginComponent {
 
 	property bool animationsEnabled: pluginData ? pluginData.animationsEnabled !== false : true
 	property real speedMultiplier: !animationsEnabled ? 0 : (pluginData && pluginData.animationSpeed != null ? 100 / pluginData.animationSpeed : 1.0)
+	property real dimOpacity: pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.60
+	property real menuOpacity: pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity / 100 : 0.20
+
+	function runCmd(proc, key, fallback) {
+		root.closeMenu()
+		proc.command = (pluginData && pluginData[key] ? pluginData[key] : fallback).split(" ")
+		proc.running = true
+	}
 
 	// -------------------------------------------------------------------------
 	// IPC — trigger via: dms ipc fullscreenPowerMenu toggle
@@ -23,33 +31,24 @@ PluginComponent {
 		target: "fullscreenPowerMenu"
 
 		function toggle(): string {
-			root.toggleMenu();
-			return overlay.visible ? "opened" : "closed";
+			root.toggleMenu()
+			return overlay.visible ? "opened" : "closed"
 		}
 
 		function open(): string {
-			if (!overlay.visible) root.openMenu();
-			return "opened";
+			if (!overlay.visible) root.openMenu()
+			return "opened"
 		}
 
 		function close(): string {
-			if (overlay.visible) root.closeMenu();
-			return "closed";
+			if (overlay.visible) root.closeMenu()
+			return "closed"
 		}
 	}
 
-	function openMenu() {
-		overlay.visible = true;
-	}
-
-	function closeMenu() {
-		overlay.visible = false;
-	}
-
-	function toggleMenu() {
-		if (overlay.visible) root.closeMenu();
-		else root.openMenu();
-	}
+	function openMenu() { overlay.visible = true }
+	function closeMenu() { overlay.visible = false }
+	function toggleMenu() { overlay.visible ? root.closeMenu() : root.openMenu() }
 
 	// -------------------------------------------------------------------------
 	// FULLSCREEN OVERLAY WINDOW
@@ -65,34 +64,23 @@ PluginComponent {
 		WlrLayershell.exclusiveZone: -1
 		WlrLayershell.keyboardFocus: overlay.visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-		anchors {
-			top: true
-			left: true
-			right: true
-			bottom: true
-		}
+		anchors { top: true; left: true; right: true; bottom: true }
 
-		// Background dim
 		Rectangle {
 			anchors.fill: parent
 			color: "#000000"
-			opacity: overlay.visible ? (pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.60) : 0
+			opacity: overlay.visible ? root.dimOpacity : 0
 			Behavior on opacity { NumberAnimation { duration: 400 * root.speedMultiplier; easing.type: Easing.OutCubic } }
 
-			MouseArea {
-				anchors.fill: parent
-				onClicked: root.closeMenu()
-			}
+			MouseArea { anchors.fill: parent; onClicked: root.closeMenu() }
 		}
 
-		// Master Animation Container
 		Item {
 			id: menuContainer
 			anchors.centerIn: parent
 			width: mainRow.implicitWidth + 48
 			height: mainRow.implicitHeight + 48
 
-			// Master animations apply to both Card & Shadow!
 			scale: overlay.visible ? 1.0 : 0.95
 			opacity: overlay.visible ? 1.0 : 0.0
 
@@ -103,12 +91,10 @@ PluginComponent {
 				}
 			]
 
-			Behavior on scale   { NumberAnimation { duration: 400 * root.speedMultiplier; easing.type: Easing.OutQuart } }
+			Behavior on scale { NumberAnimation { duration: 400 * root.speedMultiplier; easing.type: Easing.OutQuart } }
 			Behavior on opacity { NumberAnimation { duration: 250 * root.speedMultiplier } }
 
-			// Graphical Shadow (Sibling layout guarantees it works over QML6 layer bugs)
 			DropShadow {
-				id: menuCardShadow
 				anchors.fill: menuCard
 				source: menuCard
 				verticalOffset: 16
@@ -121,147 +107,100 @@ PluginComponent {
 				Behavior on color { ColorAnimation { duration: 300 * root.speedMultiplier } }
 			}
 
-			// Power Menu Card
 			Rectangle {
 				id: menuCard
 				anchors.fill: parent
 				radius: 32
-				color: (typeof Theme !== 'undefined' && Theme.surface) ? Theme.surface, pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity / 100 : 0.20) : Qt.rgba(0.2, 0.2, 0.2, 0.2)
-				border.color: (typeof Theme !== 'undefined' && Theme.surface) ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.20) : Qt.rgba(1, 1, 1, 0.2)
+				color: Theme.surface ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, root.menuOpacity) : Qt.rgba(0.2, 0.2, 0.2, 0.2)
+				border.color: Theme.surface ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.20) : Qt.rgba(1, 1, 1, 0.2)
+				Behavior on color { ColorAnimation { duration: 300 * root.speedMultiplier } }
+				Behavior on border.color { ColorAnimation { duration: 300 * root.speedMultiplier } }
 
-			Behavior on color   { ColorAnimation { duration: 300 * root.speedMultiplier } }
-			Behavior on border.color { ColorAnimation { duration: 300 * root.speedMultiplier } }
+				Keys.onEscapePressed: root.closeMenu()
 
-			// Escape key to close
-			Keys.onEscapePressed: root.closeMenu()
+				GridLayout {
+					id: mainRow
+					anchors.centerIn: parent
+					columnSpacing: 12
+					rowSpacing: 12
 
-			GridLayout {
-				id: mainRow
-				anchors.centerIn: parent
-				columnSpacing: 12
-				rowSpacing: 12
+					property string visualOrientation: pluginData && pluginData.menuOrientation ? pluginData.menuOrientation : "dynamic"
+					property bool isVerticalCalc: visualOrientation === "vertical" || (visualOrientation === "dynamic" && overlay.height > overlay.width)
 
-				// Orientation evaluation bindings
-				property string visualOrientation: pluginData && pluginData.menuOrientation ? pluginData.menuOrientation : "dynamic"
-				property bool isVerticalCalc: visualOrientation === "vertical" || (visualOrientation === "dynamic" && overlay.height > overlay.width)
+					columns: isVerticalCalc ? 1 : 6
+					rows: isVerticalCalc ? 6 : 1
 
-				columns: isVerticalCalc ? 1 : 6
-				rows: isVerticalCalc ? 6 : 1
-
-				PowerButton {
-					id: lockBtn
-					isVerticalFlow: mainRow.isVerticalCalc
-					buttonId: "lock"
-					label: "Lock"
-					iconCode: "lock"
-					shortcutKey: "L"
-					isFirst: true
-					accentColor: "#93C5FD"
-					bgColor: Qt.rgba(0.23, 0.51, 0.96, 0.2)
-					onActivated: {
-						root.closeMenu();
-						lockProc.command = (pluginData && pluginData.lockCommand ? pluginData.lockCommand : "loginctl lock-session").split(" ");
-						lockProc.running = true;
+					PowerButton {
+						id: lockBtn
+						isVerticalFlow: mainRow.isVerticalCalc
+						buttonId: "lock"; label: "Lock"; iconCode: "lock"; shortcutKey: "L"
+						isFirst: true
+						accentColor: "#93C5FD"
+						bgColor: Qt.rgba(0.23, 0.51, 0.96, 0.2)
+						onActivated: runCmd(lockProc, "lockCommand", "loginctl lock-session")
 					}
-				}
 
-				PowerButton {
-					id: sleepBtn
-					isVerticalFlow: mainRow.isVerticalCalc
-					buttonId: "sleep"
-					label: "Sleep"
-					iconCode: "bedtime"
-					shortcutKey: "S"
-					accentColor: "#A5B4FC"
-					bgColor: Qt.rgba(0.39, 0.38, 0.96, 0.2)
-					onActivated: {
-						root.closeMenu();
-						suspendProc.command = (pluginData && pluginData.suspendCommand ? pluginData.suspendCommand : "systemctl suspend").split(" ");
-						suspendProc.running = true;
+					PowerButton {
+						id: sleepBtn
+						isVerticalFlow: mainRow.isVerticalCalc
+						buttonId: "sleep"; label: "Sleep"; iconCode: "bedtime"; shortcutKey: "S"
+						accentColor: "#A5B4FC"
+						bgColor: Qt.rgba(0.39, 0.38, 0.96, 0.2)
+						onActivated: runCmd(suspendProc, "suspendCommand", "systemctl suspend")
 					}
-				}
 
-				PowerButton {
-					id: dmsBtn
-					isVerticalFlow: mainRow.isVerticalCalc
-					buttonId: "dms"
-					label: "Restart DMS"
-					shortcutKey: "D"
-					iconImageSource: "https://raw.githubusercontent.com/AvengeMedia/DankMaterialShell/f2df53afcd0870445e7f3cd45e91ac135a04442e/assets/danklogo.svg"
-					accentColor: "#FDE047"
-					bgColor: Qt.rgba(0.99, 0.88, 0.28, 0.2)
-					onActivated: {
-						root.closeMenu();
-						dmsRestartProc.command = (pluginData && pluginData.dmsRestartCommand ? pluginData.dmsRestartCommand : "dms restart").split(" ");
-						dmsRestartProc.running = true;
+					PowerButton {
+						id: dmsBtn
+						isVerticalFlow: mainRow.isVerticalCalc
+						buttonId: "dms"; label: "Restart DMS"; shortcutKey: "D"
+						iconImageSource: "https://raw.githubusercontent.com/AvengeMedia/DankMaterialShell/f2df53afcd0870445e7f3cd45e91ac135a04442e/assets/danklogo.svg"
+						accentColor: "#FDE047"
+						bgColor: Qt.rgba(0.99, 0.88, 0.28, 0.2)
+						onActivated: runCmd(dmsRestartProc, "dmsRestartCommand", "dms restart")
 					}
-				}
 
-				PowerButton {
-					id: restartBtn
-					isVerticalFlow: mainRow.isVerticalCalc
-					buttonId: "restart"
-					label: "Restart"
-					iconCode: "restart_alt"
-					shortcutKey: "R"
-					accentColor: "#86EFAC"
-					bgColor: Qt.rgba(0.13, 0.77, 0.36, 0.2)
-					onActivated: {
-						root.closeMenu();
-						rebootProc.command = (pluginData && pluginData.rebootCommand ? pluginData.rebootCommand : "systemctl reboot").split(" ");
-						rebootProc.running = true;
+					PowerButton {
+						id: restartBtn
+						isVerticalFlow: mainRow.isVerticalCalc
+						buttonId: "restart"; label: "Restart"; iconCode: "restart_alt"; shortcutKey: "R"
+						accentColor: "#86EFAC"
+						bgColor: Qt.rgba(0.13, 0.77, 0.36, 0.2)
+						onActivated: runCmd(rebootProc, "rebootCommand", "systemctl reboot")
 					}
-				}
 
-				PowerButton {
-					id: logoutBtn
-					isVerticalFlow: mainRow.isVerticalCalc
-					buttonId: "logout"
-					label: "Log Out"
-					iconCode: "logout"
-					shortcutKey: "X"
-					accentColor: "#FDBA74"
-					bgColor: Qt.rgba(0.97, 0.58, 0.11, 0.2)
-					onActivated: {
-						root.closeMenu();
-						logoutProc.command = (pluginData && pluginData.logoutCommand ? pluginData.logoutCommand : "loginctl terminate-session $XDG_SESSION_ID").split(" ");
-						logoutProc.running = true;
+					PowerButton {
+						id: logoutBtn
+						isVerticalFlow: mainRow.isVerticalCalc
+						buttonId: "logout"; label: "Log Out"; iconCode: "logout"; shortcutKey: "X"
+						accentColor: "#FDBA74"
+						bgColor: Qt.rgba(0.97, 0.58, 0.11, 0.2)
+						onActivated: runCmd(logoutProc, "logoutCommand", "loginctl terminate-session $XDG_SESSION_ID")
 					}
-				}
 
-				PowerButton {
-					id: powerBtn
-					isVerticalFlow: mainRow.isVerticalCalc
-					buttonId: "power"
-					label: "Power Off"
-					iconCode: "power_settings_new"
-					shortcutKey: "P"
-					isLast: true
-					accentColor: "#FCA5A5"
-					bgColor: Qt.rgba(0.94, 0.26, 0.26, 0.2)
-					isPrimary: true
-					onActivated: {
-						root.closeMenu();
-						shutdownProc.command = (pluginData && pluginData.shutdownCommand ? pluginData.shutdownCommand : "systemctl poweroff").split(" ");
-						shutdownProc.running = true;
+					PowerButton {
+						id: powerBtn
+						isVerticalFlow: mainRow.isVerticalCalc
+						buttonId: "power"; label: "Power Off"; iconCode: "power_settings_new"; shortcutKey: "P"
+						isLast: true; isPrimary: true
+						accentColor: "#FCA5A5"
+						bgColor: Qt.rgba(0.94, 0.26, 0.26, 0.2)
+						onActivated: runCmd(shutdownProc, "shutdownCommand", "systemctl poweroff")
 					}
 				}
 			}
 		}
-		}
 
-		// Keyboard handler on overlay background
 		Item {
 			anchors.fill: parent
 			focus: overlay.visible
 			Keys.onEscapePressed: root.closeMenu()
 			Keys.onPressed: function(event) {
-				if (event.key === Qt.Key_L) lockBtn.activated();
-				else if (event.key === Qt.Key_S) sleepBtn.activated();
-				else if (event.key === Qt.Key_D) dmsBtn.activated();
-				else if (event.key === Qt.Key_R) restartBtn.activated();
-				else if (event.key === Qt.Key_X) logoutBtn.activated();
-				else if (event.key === Qt.Key_P) powerBtn.activated();
+				if (event.key === Qt.Key_L) lockBtn.activated()
+				else if (event.key === Qt.Key_S) sleepBtn.activated()
+				else if (event.key === Qt.Key_D) dmsBtn.activated()
+				else if (event.key === Qt.Key_R) restartBtn.activated()
+				else if (event.key === Qt.Key_X) logoutBtn.activated()
+				else if (event.key === Qt.Key_P) powerBtn.activated()
 			}
 		}
 	}
@@ -276,8 +215,6 @@ PluginComponent {
 	Process { id: logoutProc }
 	Process { id: lockProc }
 	Process { id: dmsRestartProc }
-
-
 
 	// -------------------------------------------------------------------------
 	// POWER BUTTON COMPONENT
@@ -301,19 +238,10 @@ PluginComponent {
 		implicitWidth: 140
 		implicitHeight: 140
 
-		// Top level transforms for hover shift and click scale
 		transform: [
-			Translate {
-				id: hoverTranslate
-				y: ma.containsMouse ? -12 : 0
-				Behavior on y { NumberAnimation { duration: 120 * root.speedMultiplier; easing.type: Easing.OutCubic } }
-			},
 			Scale {
-				id: clickScale
-				origin.x: width / 2
-				origin.y: height / 2
-				xScale: ma.pressed ? 0.92 : 1.0
-				yScale: xScale
+				origin.x: width / 2; origin.y: height / 2
+				xScale: ma.pressed ? 0.92 : 1.0; yScale: xScale
 				Behavior on xScale { NumberAnimation { duration: 80 * root.speedMultiplier; easing.type: Easing.OutCubic } }
 			}
 		]
@@ -341,51 +269,47 @@ PluginComponent {
 			property real brrAnim: brr
 			Behavior on brrAnim { NumberAnimation { duration: 100 * root.speedMultiplier; easing.type: Easing.OutCubic } }
 
-			property color paintColor: isPrimary 
+			property color paintColor: isPrimary
 				? (ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor)
 				: (ma.containsMouse ? bgColor : Qt.rgba(1, 1, 1, 0.05))
 
-			property color paintBorder: isPrimary 
-				? Qt.rgba(0.94, 0.26, 0.26, 0.3) 
+			property color paintBorder: isPrimary
+				? Qt.rgba(0.94, 0.26, 0.26, 0.3)
 				: (ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
 
-			Behavior on paintColor  { ColorAnimation { duration: 150 * root.speedMultiplier } }
+			Behavior on paintColor { ColorAnimation { duration: 150 * root.speedMultiplier } }
 			Behavior on paintBorder { ColorAnimation { duration: 150 * root.speedMultiplier } }
 
-			onTlrAnimChanged: btnBg.requestPaint()
-			onTrrAnimChanged: btnBg.requestPaint()
-			onBrrAnimChanged: btnBg.requestPaint()
-			onBlrAnimChanged: btnBg.requestPaint()
-			onPaintColorChanged: btnBg.requestPaint()
-			onPaintBorderChanged: btnBg.requestPaint()
+			onTlrAnimChanged: requestPaint()
+			onTrrAnimChanged: requestPaint()
+			onBrrAnimChanged: requestPaint()
+			onBlrAnimChanged: requestPaint()
+			onPaintColorChanged: requestPaint()
+			onPaintBorderChanged: requestPaint()
 
 			onPaint: {
-				var ctx = getContext("2d");
-				ctx.clearRect(0, 0, width, height);
-				
-				// Canvas shadow for button depth
-				ctx.shadowColor = Qt.rgba(0, 0, 0, 0.4);
-				ctx.shadowBlur = 12;
-				ctx.shadowOffsetY = 6;
-				
-				ctx.fillStyle = paintColor;
-				ctx.strokeStyle = paintBorder;
-				ctx.lineWidth = 1;
-				
-				ctx.beginPath();
-				ctx.moveTo(tlrAnim, 0);
-				ctx.lineTo(width - trrAnim, 0);
-				ctx.arcTo(width, 0, width, trrAnim, trrAnim);
-				ctx.lineTo(width, height - brrAnim);
-				ctx.arcTo(width, height, width - brrAnim, height, brrAnim);
-				ctx.lineTo(blrAnim, height);
-				ctx.arcTo(0, height, 0, height - blrAnim, blrAnim);
-				ctx.lineTo(0, tlrAnim);
-				ctx.arcTo(0, 0, tlrAnim, 0, tlrAnim);
-				ctx.closePath();
-				ctx.fill();
-				ctx.shadowColor = "transparent"; // Remove shadow for stroke
-				ctx.stroke();
+				var ctx = getContext("2d")
+				ctx.clearRect(0, 0, width, height)
+				ctx.shadowColor = Qt.rgba(0, 0, 0, 0.4)
+				ctx.shadowBlur = 12
+				ctx.shadowOffsetY = 6
+				ctx.fillStyle = paintColor
+				ctx.strokeStyle = paintBorder
+				ctx.lineWidth = 1
+				ctx.beginPath()
+				ctx.moveTo(tlrAnim, 0)
+				ctx.lineTo(width - trrAnim, 0)
+				ctx.arcTo(width, 0, width, trrAnim, trrAnim)
+				ctx.lineTo(width, height - brrAnim)
+				ctx.arcTo(width, height, width - brrAnim, height, brrAnim)
+				ctx.lineTo(blrAnim, height)
+				ctx.arcTo(0, height, 0, height - blrAnim, blrAnim)
+				ctx.lineTo(0, tlrAnim)
+				ctx.arcTo(0, 0, tlrAnim, 0, tlrAnim)
+				ctx.closePath()
+				ctx.fill()
+				ctx.shadowColor = "transparent"
+				ctx.stroke()
 			}
 
 			ColumnLayout {
@@ -393,60 +317,37 @@ PluginComponent {
 				spacing: 10
 
 				Item {
-					width: 64
-					height: 64
+					width: 64; height: 64
 					Layout.alignment: Qt.AlignHCenter
 
-					// Inner Morphing Pill
 					Rectangle {
-						id: morphPill
 						anchors.centerIn: parent
-						width: 56
-						height: 56
-						
+						width: 56; height: 56
 						radius: ma.containsMouse ? width * 0.35 : width * 0.5
 						color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : Qt.rgba(1, 1, 1, 0.1)
-						
-						// Continuous rotation while hovered
 						RotationAnimation on rotation {
-							loops: Animation.Infinite
-							from: 0; to: 360
+							loops: Animation.Infinite; from: 0; to: 360
 							duration: 2000 * root.speedMultiplier
 							running: ma.containsMouse
 						}
-
-						// Animate baseline radius for morphing effect
 						Behavior on radius { NumberAnimation { duration: 200 * root.speedMultiplier; easing.type: Easing.OutCubic } }
 					}
 
-					// Dynamic Icon wrapper based on buttonId
 					Item {
 						anchors.centerIn: parent
-						width: 36
-						height: 36
+						width: 36; height: 36
 
 						transform: [
-							Rotation {
-								id: iconRotation
-								origin.x: 18; origin.y: 18
-								angle: 0
-							},
+							Rotation { id: iconRotation; origin.x: 18; origin.y: 18; angle: 0 },
 							Scale {
-								id: iconScale
 								origin.x: 18; origin.y: 18
-								xScale: ma.containsMouse ? 1.1 : 1.0
-								yScale: xScale
+								xScale: ma.containsMouse ? 1.1 : 1.0; yScale: xScale
 								Behavior on xScale { NumberAnimation { duration: 200 * root.speedMultiplier; easing.type: Easing.OutCubic } }
-							},
-							Translate {
-								id: iconTranslate
-								x: 0; y: 0
 							}
 						]
 
 						Text {
 							visible: iconCode !== ""
-							id: btnIcon
 							anchors.centerIn: parent
 							text: iconCode
 							font.family: "Material Symbols Rounded"
@@ -471,9 +372,7 @@ PluginComponent {
 							Behavior on color { ColorAnimation { duration: 150 * root.speedMultiplier } }
 						}
 
-						// Unified Wiggle on all icons
 						SequentialAnimation {
-							id: wiggleShakeAnim
 							running: ma.containsMouse
 							loops: Animation.Infinite
 							PauseAnimation { duration: 1500 * root.speedMultiplier }
@@ -482,9 +381,7 @@ PluginComponent {
 							NumberAnimation { target: iconRotation; property: "angle"; to: -10; duration: 80 * root.speedMultiplier; easing.type: Easing.InOutQuad }
 							NumberAnimation { target: iconRotation; property: "angle"; to: 10; duration: 80 * root.speedMultiplier; easing.type: Easing.InOutQuad }
 							NumberAnimation { target: iconRotation; property: "angle"; to: 0; duration: 80 * root.speedMultiplier; easing.type: Easing.InOutQuad }
-							onRunningChanged: {
-								if (!running) iconRotation.angle = 0;
-							}
+							onRunningChanged: { if (!running) iconRotation.angle = 0 }
 						}
 					}
 				}
@@ -493,39 +390,29 @@ PluginComponent {
 					Layout.alignment: Qt.AlignHCenter
 					implicitWidth: labelText.implicitWidth
 					implicitHeight: labelText.implicitHeight
-					
 					StyledText {
 						id: labelText
 						anchors.centerIn: parent
 						text: label
 						color: ma.containsMouse ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7))
-						font.pixelSize: 14
-						font.weight: Font.Medium
+						font.pixelSize: 14; font.weight: Font.Medium
 						Behavior on color { ColorAnimation { duration: 150 * root.speedMultiplier } }
 					}
 				}
 
 				Rectangle {
-					Layout.alignment: Qt.AlignHCenter
-					Layout.topMargin: -2
-					
-					width: 24
-					height: 24
-					radius: 8
-					
+					Layout.alignment: Qt.AlignHCenter; Layout.topMargin: -2
+					width: 24; height: 24; radius: 8
 					color: ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.1) : Qt.rgba(1, 1, 1, 0.05))
 					border.color: ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
 					border.width: 1
-					
 					Behavior on color { ColorAnimation { duration: 150 * root.speedMultiplier } }
 					Behavior on border.color { ColorAnimation { duration: 150 * root.speedMultiplier } }
-
 					StyledText {
 						anchors.centerIn: parent
 						text: shortcutKey
 						color: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4))
-						font.pixelSize: 11
-						font.weight: Font.Bold
+						font.pixelSize: 11; font.weight: Font.Bold
 						Behavior on color { ColorAnimation { duration: 150 * root.speedMultiplier } }
 					}
 				}

@@ -6,566 +6,329 @@ import qs.Widgets
 import qs.Modules.Plugins
 
 PluginSettings {
-    id: root
-    pluginId: "fullscreenPowerMenu"
+	id: root
+	pluginId: "fullscreenPowerMenu"
 
-    Column {
-        id: rootWrapper
-        width: parent.width
-        spacing: Theme.spacingM
+	// -------------------------------------------------------------------------
+	// REUSABLE COMPONENTS
+	// -------------------------------------------------------------------------
 
-        function loadValue() {
-            var groups = [orientationGroup, generalGroup, cmdGroup];
-            for (var g = 0; g < groups.length; g++) {
-                var group = groups[g];
-                for (var i = 0; i < group.children.length; i++) {
-                    var item = group.children[i];
-                    if (item.loadValue) item.loadValue();
-                    else if (item.children) {
-                        for (var j = 0; j < item.children.length; j++) {
-                            var subItem = item.children[j];
-                            if (subItem.loadValue) subItem.loadValue();
-                        }
-                    }
-                }
-            }
-        }
+	component SectionContainer: Rectangle {
+		width: parent.width
+		height: sectionContent.implicitHeight + Theme.spacingM * 2
+		color: Theme.surfaceContainer
+		radius: Theme.cornerRadius
+		border.color: Theme.outline
+		border.width: 1
+		opacity: 0.8
 
-        // ---------------------------------------------------------------------
-        // ORIENTATION SETTINGS CONTAINER
-        // ---------------------------------------------------------------------
-        Rectangle {
-            width: parent.width
-            height: orientationGroup.implicitHeight + Theme.spacingM * 2
-            color: Theme.surfaceContainer
-            radius: Theme.cornerRadius
-            border.color: Theme.outline
-            border.width: 1
-            opacity: 0.8
+		default property alias content: sectionContent.data
 
-            Column {
-                id: orientationGroup
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
+		Column {
+			id: sectionContent
+			anchors.fill: parent
+			anchors.margins: Theme.spacingM
+			spacing: Theme.spacingM
+		}
+	}
 
-                // -------------------------------------------------------------
-                // Menu Orientation
-                // -------------------------------------------------------------
-                Column {
-                    width: parent.width
-                    spacing: Theme.spacingXS
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "screen_rotation"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                        Column {
-                            width: parent.width - 22 - Theme.spacingM
-                            StyledText { text: "Menu Orientation"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: "Change the button grid flow depending on device orientation."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                    }
-                    DankDropdown {
-                        id: orientationDropdown
-                        width: parent.width
+	component SettingsSlider: Column {
+		id: sliderSection
+		width: parent.width
+		spacing: Theme.spacingXS
 
-                        property string settingKey: "menuOrientation"
-                        property string defaultValue: "dynamic"
-                        property var optionList: [
-                            { label: "Dynamic (Auto-detect)", value: "dynamic" },
-                            { label: "Horizontal Flow", value: "horizontal" },
-                            { label: "Vertical Flow", value: "vertical" }
-                        ]
+		property string iconName: ""
+		property string title: ""
+		property string description: ""
+		property string settingKey: ""
+		property int defaultValue: 0
+		property int minimumValue: 0
+		property int maximumValue: 100
+		property string unit: "%"
+		property bool sliderEnabled: true
 
-                        options: ["Dynamic (Auto-detect)", "Horizontal Flow", "Vertical Flow"]
-                        
-                        function loadValue() {
-                            var settings = root;
-                            if (settings) {
-                                var loadedVal = settings.loadValue(settingKey, defaultValue);
-                                for (var i = 0; i < optionList.length; i++) {
-                                    if (optionList[i].value === loadedVal) {
-                                        currentValue = optionList[i].label;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Component.onCompleted: loadValue()
-                        
-                        onValueChanged: newValue => {
-                            for (var i = 0; i < optionList.length; i++) {
-                                if (optionList[i].label === newValue) {
-                                    root.saveValue(settingKey, optionList[i].value);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+		Row {
+			width: parent.width
+			spacing: Theme.spacingM
+			DankIcon { name: sliderSection.iconName; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
+			Column {
+				width: parent.width - 22 - 22 - Theme.spacingM * 2
+				StyledText { text: sliderSection.title; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
+				StyledText { text: sliderSection.description; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+			}
+			DankIcon {
+				name: "restart_alt"
+				size: 22
+				anchors.verticalCenter: parent.verticalCenter
+				opacity: slider.value !== sliderSection.defaultValue && sliderSection.sliderEnabled ? 0.8 : 0.0
+				Behavior on opacity { NumberAnimation { duration: 200 } }
+				NumberAnimation {
+					id: resetAnim
+					target: slider
+					property: "value"
+					to: sliderSection.defaultValue
+					duration: 300
+					easing.type: Easing.OutCubic
+				}
+				MouseArea {
+					anchors.fill: parent
+					enabled: slider.value !== sliderSection.defaultValue && sliderSection.sliderEnabled
+					cursorShape: Qt.PointingHandCursor
+					onClicked: {
+						resetAnim.restart()
+						root.saveValue(sliderSection.settingKey, sliderSection.defaultValue)
+					}
+				}
+			}
+		}
 
-        // ---------------------------------------------------------------------
-        // APPEARANCE SETTINGS CONTAINER
-        // ---------------------------------------------------------------------
-        Rectangle {
-            width: parent.width
-            height: generalGroup.implicitHeight + Theme.spacingM * 2
-            color: Theme.surfaceContainer
-            radius: Theme.cornerRadius
-            border.color: Theme.outline
-            border.width: 1
-            opacity: 0.8
+		DankSlider {
+			id: slider
+			property string settingKey: sliderSection.settingKey
+			width: parent.width
+			minimum: sliderSection.minimumValue
+			maximum: sliderSection.maximumValue
+			unit: sliderSection.unit
+			enabled: sliderSection.sliderEnabled
+			function loadValue() {
+				if (root) value = root.loadValue(settingKey, sliderSection.defaultValue)
+			}
+			Component.onCompleted: loadValue()
+			onSliderValueChanged: newValue => {
+				value = newValue
+				root.saveValue(settingKey, newValue)
+			}
+		}
+	}
 
-            Column {
-                id: generalGroup
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
+	component CommandField: Column {
+		id: cmdField
+		width: parent.width
+		spacing: Theme.spacingM
 
-                // -------------------------------------------------------------
-                // Menu Transparency
-                // -------------------------------------------------------------
-                Column {
-                    width: parent.width
-                    spacing: Theme.spacingXS
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "visibility"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                        Column {
-                            width: parent.width - 22 - 22 - Theme.spacingM * 2
-                            StyledText { text: "Menu Transparency"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: "Opacity of the power menu floating container."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                        DankIcon {
-                            name: "restart_alt"
-                            size: 22
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: menuOpacitySlider.value !== 20 ? 0.8 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 200 } }
-                            NumberAnimation {
-                                id: menuOpacityAnim
-                                target: menuOpacitySlider
-                                property: "value"
-                                to: menuOpacitySlider.defaultValue
-                                duration: 300
-                                easing.type: Easing.OutCubic
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: menuOpacitySlider.value !== 20
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    menuOpacityAnim.restart();
-                                    root.saveValue(menuOpacitySlider.settingKey, menuOpacitySlider.defaultValue);
-                                }
-                            }
-                        }
-                    }
-                    DankSlider {
-                        id: menuOpacitySlider
-                        property int defaultValue: 20
-                        property string settingKey: "menuOpacity"
-                        width: parent.width
-                        minimum: 0
-                        maximum: 100
-                        unit: "%"
-                        function loadValue() {
-                            var settings = root;
-                            if (settings) {
-                                value = settings.loadValue(settingKey, defaultValue);
-                            }
-                        }
-                        Component.onCompleted: loadValue()
-                        onSliderValueChanged: newValue => {
-                            value = newValue;
-                            root.saveValue(settingKey, newValue);
-                        }
-                    }
-                }
+		property string iconName: ""
+		property string title: ""
+		property string description: ""
+		property string settingKey: ""
+		property string defaultValue: ""
 
-                // -------------------------------------------------------------
-                // Dim Intensity
-                // -------------------------------------------------------------
-                Column {
-                    width: parent.width
-                    spacing: Theme.spacingXS
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "opacity"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                        Column {
-                            width: parent.width - 22 - 22 - Theme.spacingM * 2
-                            StyledText { text: "Background Dim Intensity"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: "How dark the background dims when the menu is open."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                        DankIcon {
-                            name: "restart_alt"
-                            size: 22
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: dimOpacitySlider.value !== 60 ? 0.8 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 200 } }
-                            NumberAnimation {
-                                id: dimOpacityAnim
-                                target: dimOpacitySlider
-                                property: "value"
-                                to: dimOpacitySlider.defaultValue
-                                duration: 300
-                                easing.type: Easing.OutCubic
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: dimOpacitySlider.value !== 60
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    dimOpacityAnim.restart();
-                                    root.saveValue(dimOpacitySlider.settingKey, dimOpacitySlider.defaultValue);
-                                }
-                            }
-                        }
-                    }
-                    DankSlider {
-                        id: dimOpacitySlider
-                        property int defaultValue: 60
-                        property string settingKey: "dimOpacity"
-                        width: parent.width
-                        minimum: 0
-                        maximum: 100
-                        unit: "%"
-                        function loadValue() {
-                            var settings = root;
-                            if (settings) {
-                                value = settings.loadValue(settingKey, defaultValue);
-                            }
-                        }
-                        Component.onCompleted: loadValue()
-                        onSliderValueChanged: newValue => {
-                            value = newValue;
-                            root.saveValue(settingKey, newValue);
-                        }
-                    }
-                }
+		Row {
+			width: parent.width
+			spacing: Theme.spacingM
+			DankIcon { name: cmdField.iconName; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
+			Column {
+				width: parent.width - 22 - Theme.spacingM
+				StyledText { text: cmdField.title; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
+				StyledText { text: cmdField.description; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+			}
+		}
+		DankTextField {
+			id: textField
+			property string settingKey: cmdField.settingKey
+			width: parent.width
+			text: cmdField.defaultValue
+			function loadValue() {
+				if (root) text = root.loadValue(settingKey, cmdField.defaultValue)
+			}
+			Component.onCompleted: loadValue()
+			onEditingFinished: root.saveValue(settingKey, text)
+		}
+	}
 
-                // -------------------------------------------------------------
-                // Animations Toggle
-                // -------------------------------------------------------------
-                DankToggle {
-                    id: animToggle
-                    width: parent.width
-                    text: "Animations"
-                    description: "Enable or disable all menu animations."
-                    property string settingKey: "animationsEnabled"
-                    property bool defaultValue: true
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            var loaded = settings.loadValue(settingKey, defaultValue);
-                            checked = loaded === true || loaded === "true";
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onToggled: function(checked) {
-                        root.saveValue(settingKey, checked);
-                    }
-                }
+	// -------------------------------------------------------------------------
+	// SETTINGS UI
+	// -------------------------------------------------------------------------
 
-                // -------------------------------------------------------------
-                // Animation Speed
-                // -------------------------------------------------------------
-                Column {
-                    width: parent.width
-                    spacing: Theme.spacingXS
-                    opacity: animToggle.checked ? 1.0 : 0.4
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "speed"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                        Column {
-                            width: parent.width - 22 - 22 - Theme.spacingM * 2
-                            StyledText { text: "Animation Speed"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: "Controls the speed of all menu animations. Higher = faster."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                        DankIcon {
-                            name: "restart_alt"
-                            size: 22
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: animSpeedSlider.value !== 100 && animToggle.checked ? 0.8 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 200 } }
-                            NumberAnimation {
-                                id: animSpeedResetAnim
-                                target: animSpeedSlider
-                                property: "value"
-                                to: animSpeedSlider.defaultValue
-                                duration: 300
-                                easing.type: Easing.OutCubic
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: animSpeedSlider.value !== 100 && animToggle.checked
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    animSpeedResetAnim.restart();
-                                    root.saveValue(animSpeedSlider.settingKey, animSpeedSlider.defaultValue);
-                                }
-                            }
-                        }
-                    }
-                    DankSlider {
-                        id: animSpeedSlider
-                        property int defaultValue: 100
-                        property string settingKey: "animationSpeed"
-                        width: parent.width
-                        minimum: 25
-                        maximum: 300
-                        unit: "%"
-                        enabled: animToggle.checked
-                        function loadValue() {
-                            var settings = root;
-                            if (settings) {
-                                value = settings.loadValue(settingKey, defaultValue);
-                            }
-                        }
-                        Component.onCompleted: loadValue()
-                        onSliderValueChanged: newValue => {
-                            value = newValue;
-                            root.saveValue(settingKey, newValue);
-                        }
-                    }
-                }
-            }
-        }
+	Column {
+		id: rootWrapper
+		width: parent.width
+		spacing: Theme.spacingM
 
-        // ---------------------------------------------------------------------
-        // COMMAND EXECUTION SETTINGS CONTAINER
-        // ---------------------------------------------------------------------
-        Rectangle {
-            width: parent.width
-            height: cmdGroup.implicitHeight + Theme.spacingM * 2
-            color: Theme.surfaceContainer
-            radius: Theme.cornerRadius
-            border.color: Theme.outline
-            border.width: 1
-            opacity: 0.8
+		function loadValue() {
+			var groups = [orientationGroup, generalGroup, cmdGroup]
+			for (var g = 0; g < groups.length; g++) {
+				var group = groups[g]
+				for (var i = 0; i < group.children.length; i++) {
+					var item = group.children[i]
+					if (item.loadValue) item.loadValue()
+					else if (item.children) {
+						for (var j = 0; j < item.children.length; j++) {
+							var subItem = item.children[j]
+							if (subItem.loadValue) subItem.loadValue()
+						}
+					}
+				}
+			}
+		}
 
-            Column {
-                id: cmdGroup
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
+		// ---------------------------------------------------------------------
+		// ORIENTATION
+		// ---------------------------------------------------------------------
+		SectionContainer {
+			Column {
+				id: orientationGroup
+				width: parent.width
+				spacing: Theme.spacingXS
+				Row {
+					width: parent.width
+					spacing: Theme.spacingM
+					DankIcon { name: "screen_rotation"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
+					Column {
+						width: parent.width - 22 - Theme.spacingM
+						StyledText { text: "Menu Orientation"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
+						StyledText { text: "Change the button grid flow depending on device orientation."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+					}
+				}
+				DankDropdown {
+					id: orientationDropdown
+					width: parent.width
 
-            // -----------------------------------------------------------------
-            // Shutdown Cmd
-            // -----------------------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.spacingM
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    DankIcon { name: "power_settings_new"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                    Column {
-                        width: parent.width - 22 - Theme.spacingM
-                        StyledText { text: "Shutdown Command"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                        StyledText { text: "Command executed to power off the machine."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                    }
-                }
-                DankTextField {
-                    id: shutdownCmdField
-                    property string settingKey: "shutdownCommand"
-                    property string defaultValue: "systemctl poweroff"
-                    width: parent.width
-                    text: defaultValue
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            text = settings.loadValue(settingKey, defaultValue);
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onEditingFinished: {
-                        root.saveValue(settingKey, text);
-                    }
-                }
-            }
+					property string settingKey: "menuOrientation"
+					property string defaultValue: "dynamic"
+					property var optionList: [
+						{ label: "Dynamic (Auto-detect)", value: "dynamic" },
+						{ label: "Horizontal Flow", value: "horizontal" },
+						{ label: "Vertical Flow", value: "vertical" }
+					]
 
-            // -----------------------------------------------------------------
-            // Restart Cmd
-            // -----------------------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.spacingM
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    DankIcon { name: "restart_alt"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                    Column {
-                        width: parent.width - 22 - Theme.spacingM
-                        StyledText { text: "Restart Command"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                        StyledText { text: "Command executed to reboot the machine."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                    }
-                }
-                DankTextField {
-                    id: rebootCmdField
-                    property string settingKey: "rebootCommand"
-                    property string defaultValue: "systemctl reboot"
-                    width: parent.width
-                    text: defaultValue
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            text = settings.loadValue(settingKey, defaultValue);
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onEditingFinished: {
-                        root.saveValue(settingKey, text);
-                    }
-                }
-            }
+					options: ["Dynamic (Auto-detect)", "Horizontal Flow", "Vertical Flow"]
 
-            // -----------------------------------------------------------------
-            // Suspend Cmd
-            // -----------------------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.spacingM
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    DankIcon { name: "bedtime"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                    Column {
-                        width: parent.width - 22 - Theme.spacingM
-                        StyledText { text: "Suspend Command"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                        StyledText { text: "Command executed to sleep/suspend the machine."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                    }
-                }
-                DankTextField {
-                    id: suspendCmdField
-                    property string settingKey: "suspendCommand"
-                    property string defaultValue: "systemctl suspend"
-                    width: parent.width
-                    text: defaultValue
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            text = settings.loadValue(settingKey, defaultValue);
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onEditingFinished: {
-                        root.saveValue(settingKey, text);
-                    }
-                }
-            }
+					function loadValue() {
+						if (root) {
+							var loadedVal = root.loadValue(settingKey, defaultValue)
+							for (var i = 0; i < optionList.length; i++) {
+								if (optionList[i].value === loadedVal) {
+									currentValue = optionList[i].label
+									break
+								}
+							}
+						}
+					}
 
-            // -----------------------------------------------------------------
-            // Logout Cmd
-            // -----------------------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.spacingM
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    DankIcon { name: "logout"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                    Column {
-                        width: parent.width - 22 - Theme.spacingM
-                        StyledText { text: "Log Out Command"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                        StyledText { text: "Command to log out of the session."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                    }
-                }
-                DankTextField {
-                    id: logoutCmdField
-                    property string settingKey: "logoutCommand"
-                    property string defaultValue: "loginctl terminate-session"
-                    width: parent.width
-                    text: defaultValue
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            text = settings.loadValue(settingKey, defaultValue);
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onEditingFinished: {
-                        root.saveValue(settingKey, text);
-                    }
-                }
-            }
+					Component.onCompleted: loadValue()
 
-            // -----------------------------------------------------------------
-            // Lock Screen Cmd
-            // -----------------------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.spacingM
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    DankIcon { name: "lock"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                    Column {
-                        width: parent.width - 22 - Theme.spacingM
-                        StyledText { text: "Lock Screen Command"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                        StyledText { text: "Command to lock the screen."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                    }
-                }
-                DankTextField {
-                    id: lockCmdField
-                    property string settingKey: "lockCommand"
-                    property string defaultValue: "loginctl lock-session"
-                    width: parent.width
-                    text: defaultValue
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            text = settings.loadValue(settingKey, defaultValue);
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onEditingFinished: {
-                        root.saveValue(settingKey, text);
-                    }
-                }
-            }
+					onValueChanged: newValue => {
+						for (var i = 0; i < optionList.length; i++) {
+							if (optionList[i].label === newValue) {
+								root.saveValue(settingKey, optionList[i].value)
+								break
+							}
+						}
+					}
+				}
+			}
+		}
 
-            // -----------------------------------------------------------------
-            // DMS Restart Cmd
-            // -----------------------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.spacingM
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    DankIcon { name: "terminal"; size: 22; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
-                    Column {
-                        width: parent.width - 22 - Theme.spacingM
-                        StyledText { text: "Restart DMS Command"; font.pixelSize: Theme.fontSizeMedium; font.weight: Font.Medium; color: Theme.surfaceText }
-                        StyledText { text: "Command to restart the shell."; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                    }
-                }
-                DankTextField {
-                    id: dmsRestartCmdField
-                    property string settingKey: "dmsRestartCommand"
-                    property string defaultValue: "dms restart"
-                    width: parent.width
-                    text: defaultValue
-                    function loadValue() {
-                        var settings = root;
-                        if (settings) {
-                            text = settings.loadValue(settingKey, defaultValue);
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onEditingFinished: {
-                        root.saveValue(settingKey, text);
-                    }
-                }
-            }
-        }
-    }
-}
+		// ---------------------------------------------------------------------
+		// APPEARANCE
+		// ---------------------------------------------------------------------
+		SectionContainer {
+			Column {
+				id: generalGroup
+				width: parent.width
+				spacing: Theme.spacingM
+
+				SettingsSlider {
+					iconName: "visibility"
+					title: "Menu Transparency"
+					description: "Opacity of the power menu floating container."
+					settingKey: "menuOpacity"
+					defaultValue: 20
+					maximumValue: 100
+				}
+
+				SettingsSlider {
+					iconName: "opacity"
+					title: "Background Dim Intensity"
+					description: "How dark the background dims when the menu is open."
+					settingKey: "dimOpacity"
+					defaultValue: 60
+					maximumValue: 100
+				}
+
+				DankToggle {
+					id: animToggle
+					width: parent.width
+					text: "Animations"
+					description: "Enable or disable all menu animations."
+					property string settingKey: "animationsEnabled"
+					property bool defaultValue: true
+					function loadValue() {
+						if (root) {
+							var loaded = root.loadValue(settingKey, defaultValue)
+							checked = loaded === true || loaded === "true"
+						}
+					}
+					Component.onCompleted: loadValue()
+					onToggled: function(checked) { root.saveValue(settingKey, checked) }
+				}
+
+				SettingsSlider {
+					iconName: "speed"
+					title: "Animation Speed"
+					description: "Controls the speed of all menu animations. Higher = faster."
+					settingKey: "animationSpeed"
+					defaultValue: 100
+					minimumValue: 25
+					maximumValue: 300
+					sliderEnabled: animToggle.checked
+					opacity: animToggle.checked ? 1.0 : 0.4
+				}
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// COMMANDS
+		// ---------------------------------------------------------------------
+		SectionContainer {
+			Column {
+				id: cmdGroup
+				width: parent.width
+				spacing: Theme.spacingM
+
+				CommandField {
+					iconName: "power_settings_new"
+					title: "Shutdown Command"
+					description: "Command executed to power off the machine."
+					settingKey: "shutdownCommand"
+					defaultValue: "systemctl poweroff"
+				}
+				CommandField {
+					iconName: "restart_alt"
+					title: "Restart Command"
+					description: "Command executed to reboot the machine."
+					settingKey: "rebootCommand"
+					defaultValue: "systemctl reboot"
+				}
+				CommandField {
+					iconName: "bedtime"
+					title: "Suspend Command"
+					description: "Command executed to sleep/suspend the machine."
+					settingKey: "suspendCommand"
+					defaultValue: "systemctl suspend"
+				}
+				CommandField {
+					iconName: "logout"
+					title: "Log Out Command"
+					description: "Command to log out of the session."
+					settingKey: "logoutCommand"
+					defaultValue: "loginctl terminate-session"
+				}
+				CommandField {
+					iconName: "lock"
+					title: "Lock Screen Command"
+					description: "Command to lock the screen."
+					settingKey: "lockCommand"
+					defaultValue: "loginctl lock-session"
+				}
+				CommandField {
+					iconName: "terminal"
+					title: "Restart DMS Command"
+					description: "Command to restart the shell."
+					settingKey: "dmsRestartCommand"
+					defaultValue: "dms restart"
+				}
+			}
+		}
+	}
 }
