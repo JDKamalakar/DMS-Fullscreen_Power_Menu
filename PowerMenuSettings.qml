@@ -173,6 +173,78 @@ PluginSettings {
         }
     }
 
+    component SettingsToggle: Column {
+        id: toggleSection
+        width: parent.width
+        spacing: Theme.spacingXS
+
+        property string iconName: ""
+        property string title: ""
+        property string description: ""
+        property string settingKey: ""
+        property bool defaultValue: false
+
+        property alias checked: toggle.checked
+
+        function loadValue() {
+            if (root) {
+                var loaded = root.loadValue(settingKey, defaultValue);
+                checked = loaded === true || loaded === "true";
+            }
+        }
+
+        Row {
+            width: parent.width
+            spacing: Theme.spacingM
+
+            DankIcon {
+                name: toggleSection.iconName
+                size: 22
+                anchors.verticalCenter: parent.verticalCenter
+                opacity: 0.8
+            }
+
+            Column {
+                // Ensure the text column takes up the remaining space properly
+                width: parent.width - 22 - 52 - Theme.spacingM * 2
+                spacing: 2
+                StyledText {
+                    text: toggleSection.title
+                    font.pixelSize: Theme.fontSizeMedium
+                    font.weight: Font.Medium
+                    color: Theme.surfaceText
+                }
+                StyledText {
+                    text: toggleSection.description
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                }
+            }
+
+            Item {
+                width: 52
+                height: 24
+                anchors.verticalCenter: parent.verticalCenter
+                DankToggle {
+                    id: toggle
+                    anchors.centerIn: parent
+                    Component.onCompleted: toggleSection.loadValue()
+                    onToggled: function (checked) {
+                        root.saveValue(toggleSection.settingKey, checked);
+                    }
+                }
+            }
+        }
+
+        // Spacer to match the vertical rhythm of Sliders which have a second row
+        Item {
+            width: 1
+            height: Theme.spacingXS
+        }
+    }
+
     // -------------------------------------------------------------------------
     // SETTINGS UI
     // -------------------------------------------------------------------------
@@ -311,23 +383,22 @@ PluginSettings {
                     maximumValue: 100
                 }
 
-                DankToggle {
+                SettingsToggle {
                     id: animToggle
-                    width: parent.width
-                    text: "Animations"
+                    iconName: "auto_fix_high"
+                    title: "Animations"
                     description: "Enable or disable all menu animations."
-                    property string settingKey: "animationsEnabled"
-                    property bool defaultValue: true
-                    function loadValue() {
-                        if (root) {
-                            var loaded = root.loadValue(settingKey, defaultValue);
-                            checked = loaded === true || loaded === "true";
-                        }
-                    }
-                    Component.onCompleted: loadValue()
-                    onToggled: function (checked) {
-                        root.saveValue(settingKey, checked);
-                    }
+                    settingKey: "animationsEnabled"
+                    defaultValue: true
+                }
+
+                SettingsToggle {
+                    id: tintToggle
+                    iconName: "palette"
+                    title: "Primary Color Tint"
+                    description: "Apply a subtle primary color tint to the menu background."
+                    settingKey: "primaryTintEnabled"
+                    defaultValue: false
                 }
 
                 SettingsSlider {

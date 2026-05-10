@@ -13,6 +13,7 @@ PluginComponent {
     id: root
 
     property bool animationsEnabled: pluginData ? pluginData.animationsEnabled !== false : true
+    property bool primaryTintEnabled: pluginData ? pluginData.primaryTintEnabled === true : false
     property real speedMultiplier: !animationsEnabled ? 0 : (pluginData && pluginData.animationSpeed != null ? 100 / pluginData.animationSpeed : 1.0)
     property real dimOpacity: pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.60
     property real menuOpacity: pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity / 100 : 0.20
@@ -150,8 +151,27 @@ PluginComponent {
                 id: menuCard
                 anchors.fill: parent
                 radius: 32
-                color: Theme.surface ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, root.menuOpacity) : Qt.rgba(0.2, 0.2, 0.2, 0.2)
-                border.color: Theme.surface ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.20) : Qt.rgba(1, 1, 1, 0.2)
+                color: {
+                    var surface = Theme.surface || Qt.rgba(0.15, 0.15, 0.15, 1);
+                    if (root.primaryTintEnabled && Theme.primary) {
+                        // Soft 15% tint blend
+                        return Qt.rgba(
+                            surface.r * 0.85 + Theme.primary.r * 0.15,
+                            surface.g * 0.85 + Theme.primary.g * 0.15,
+                            surface.b * 0.85 + Theme.primary.b * 0.15,
+                            root.menuOpacity
+                        );
+                    }
+                    return Qt.rgba(surface.r, surface.g, surface.b, root.menuOpacity);
+                }
+                border.color: {
+                    var surface = Theme.surface || Qt.rgba(0.2, 0.2, 0.2, 1);
+                    if (root.primaryTintEnabled && Theme.primary) {
+                        // Subtle primary border
+                        return Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.25);
+                    }
+                    return Qt.rgba(surface.r, surface.g, surface.b, 0.20);
+                }
                 Behavior on color {
                     ColorAnimation {
                         duration: 300 * root.speedMultiplier
