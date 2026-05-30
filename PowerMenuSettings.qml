@@ -468,5 +468,71 @@ PluginSettings {
                 }
             }
         }
+
+        // ---------------------------------------------------------------------
+        // IPC COMMANDS & SHORTCUTS
+        // ---------------------------------------------------------------------
+        SectionContainer {
+            Column {
+                width: parent.width
+                spacing: Theme.spacingM
+
+                Row {
+                    width: parent.width
+                    spacing: Theme.spacingM
+                    DankIcon {
+                        name: "keyboard_command_key"
+                        size: 22
+                        anchors.verticalCenter: parent.verticalCenter
+                        opacity: 0.8
+                    }
+                    Column {
+                        width: parent.width - 22 - Theme.spacingM
+                        StyledText {
+                            text: "IPC Commands & Shortcuts"
+                            font.pixelSize: Theme.fontSizeMedium
+                            font.weight: Font.Medium
+                            color: Theme.surfaceText
+                        }
+                        StyledText {
+                            text: "You can open, close, or toggle the Power Menu using the dms CLI:"
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+
+                CopyBox {
+                    label: "Toggle Modal Command"
+                    text: "dms ipc call fullscreenPowerMenu toggle"
+                }
+
+                CopyBox {
+                    label: "Open Modal Command"
+                    text: "dms ipc call fullscreenPowerMenu open"
+                }
+
+                CopyBox {
+                    label: "Close Modal Command"
+                    text: "dms ipc call fullscreenPowerMenu close"
+                }
+
+                StyledText {
+                    width: parent.width
+                    text: "To trigger the power menu using Mod+Escape, add this spawn command to your Niri configuration binds:"
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.primary
+                    font.italic: true
+                    wrapMode: Text.WordWrap
+                }
+
+                CopyBox {
+                    label: "Niri Bind Configuration"
+                    text: "Mod+Delete { spawn \"dms\" \"ipc\" \"call\" \"fullscreenPowerMenu\" \"toggle\"; }"
+                }
+            }
+        }
     }
 }
