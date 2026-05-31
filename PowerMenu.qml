@@ -361,13 +361,13 @@ PluginComponent {
             anchors.fill: parent
 
             property real defaultRadius: 16
-            property real hoverRadius: 70
+            property real hoverRadius: (width - 2) / 2
 
             property real tlr: ma.containsMouse ? hoverRadius : (isFirst ? 28 : defaultRadius)
             property real tlrAnim: tlr
             Behavior on tlrAnim {
                 NumberAnimation {
-                    duration: 100 * root.speedMultiplier
+                    duration: 250 * root.speedMultiplier
                     easing.type: Easing.OutCubic
                 }
             }
@@ -376,7 +376,7 @@ PluginComponent {
             property real trrAnim: trr
             Behavior on trrAnim {
                 NumberAnimation {
-                    duration: 100 * root.speedMultiplier
+                    duration: 250 * root.speedMultiplier
                     easing.type: Easing.OutCubic
                 }
             }
@@ -385,7 +385,7 @@ PluginComponent {
             property real blrAnim: blr
             Behavior on blrAnim {
                 NumberAnimation {
-                    duration: 100 * root.speedMultiplier
+                    duration: 250 * root.speedMultiplier
                     easing.type: Easing.OutCubic
                 }
             }
@@ -394,7 +394,7 @@ PluginComponent {
             property real brrAnim: brr
             Behavior on brrAnim {
                 NumberAnimation {
-                    duration: 100 * root.speedMultiplier
+                    duration: 250 * root.speedMultiplier
                     easing.type: Easing.OutCubic
                 }
             }
@@ -405,12 +405,12 @@ PluginComponent {
 
             Behavior on paintColor {
                 ColorAnimation {
-                    duration: 150 * root.speedMultiplier
+                    duration: 250 * root.speedMultiplier
                 }
             }
             Behavior on paintBorder {
                 ColorAnimation {
-                    duration: 150 * root.speedMultiplier
+                    duration: 250 * root.speedMultiplier
                 }
             }
 
@@ -424,25 +424,27 @@ PluginComponent {
             onPaint: {
                 var ctx = getContext("2d");
                 ctx.clearRect(0, 0, width, height);
-                ctx.shadowColor = Qt.rgba(0, 0, 0, 0.4);
-                ctx.shadowBlur = 12;
-                ctx.shadowOffsetY = 6;
                 ctx.fillStyle = paintColor;
                 ctx.strokeStyle = paintBorder;
                 ctx.lineWidth = 1;
+                
+                var x = 1;
+                var y = 1;
+                var w = width - 2;
+                var h = height - 2;
+                
                 ctx.beginPath();
-                ctx.moveTo(tlrAnim, 0);
-                ctx.lineTo(width - trrAnim, 0);
-                ctx.arcTo(width, 0, width, trrAnim, trrAnim);
-                ctx.lineTo(width, height - brrAnim);
-                ctx.arcTo(width, height, width - brrAnim, height, brrAnim);
-                ctx.lineTo(blrAnim, height);
-                ctx.arcTo(0, height, 0, height - blrAnim, blrAnim);
-                ctx.lineTo(0, tlrAnim);
-                ctx.arcTo(0, 0, tlrAnim, 0, tlrAnim);
+                ctx.moveTo(x + tlrAnim, y);
+                ctx.lineTo(x + w - trrAnim, y);
+                ctx.arcTo(x + w, y, x + w, y + trrAnim, trrAnim);
+                ctx.lineTo(x + w, y + h - brrAnim);
+                ctx.arcTo(x + w, y + h, x + w - brrAnim, y + h, brrAnim);
+                ctx.lineTo(x + blrAnim, y + h);
+                ctx.arcTo(x, y + h, x, y + h - blrAnim, blrAnim);
+                ctx.lineTo(x, y + tlrAnim);
+                ctx.arcTo(x, y, x + tlrAnim, y, tlrAnim);
                 ctx.closePath();
                 ctx.fill();
-                ctx.shadowColor = "transparent";
                 ctx.stroke();
             }
 
