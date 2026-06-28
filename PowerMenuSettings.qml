@@ -57,7 +57,7 @@ PluginSettings {
                 opacity: 0.8
             }
             Column {
-                width: Math.max(0, parent.width - 44 - Theme.spacingM * 2)
+                width: Math.max(0, parent.width - 54 - Theme.spacingM * 2)
                 StyledText {
                     text: sliderSection.title
                     font.pixelSize: Theme.fontSizeMedium
@@ -438,6 +438,18 @@ PluginSettings {
                     description: "Apply a subtle primary color tint to the menu background."
                     settingKey: "primaryTintEnabled"
                     defaultValue: false
+                }
+
+                SettingsSlider {
+                    iconName: "format_color_fill"
+                    title: "Tint Intensity"
+                    description: "Adjust the intensity of the primary color tint."
+                    settingKey: "tintIntensity"
+                    defaultValue: 30
+                    minimumValue: 5
+                    maximumValue: 100
+                    sliderEnabled: tintToggle.checked
+                    opacity: tintToggle.checked ? 1.0 : 0.4
                 }
 
                 SettingsSlider {

@@ -17,6 +17,7 @@ PluginComponent {
     property real speedMultiplier: !animationsEnabled ? 0 : (pluginData && pluginData.animationSpeed != null ? 100 / pluginData.animationSpeed : 1.0)
     property real dimOpacity: pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.60
     property real menuOpacity: pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity / 100 : 0.20
+    property real tintIntensity: pluginData && pluginData.tintIntensity != null ? pluginData.tintIntensity / 100 : 0.30
 
     function runCmd(proc, key, fallback) {
         root.closeMenu();
@@ -154,9 +155,9 @@ PluginComponent {
                     if (root.primaryTintEnabled && Theme.primary) {
                         // Soft 15% tint blend
                         return Qt.rgba(
-                            surface.r * 0.85 + Theme.primary.r * 0.15,
-                            surface.g * 0.85 + Theme.primary.g * 0.15,
-                            surface.b * 0.85 + Theme.primary.b * 0.15,
+                            surface.r * (1.0 - root.tintIntensity) + Theme.primary.r * root.tintIntensity,
+                            surface.g * (1.0 - root.tintIntensity) + Theme.primary.g * root.tintIntensity,
+                            surface.b * (1.0 - root.tintIntensity) + Theme.primary.b * root.tintIntensity,
                             root.menuOpacity
                         );
                     }
