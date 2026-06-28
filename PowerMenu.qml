@@ -8,7 +8,7 @@ import Quickshell.Widgets
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
-
+import QtQuick.Shapes
 PluginComponent {
     id: root
 
@@ -334,6 +334,8 @@ PluginComponent {
         property bool isFirst: false
         property bool isLast: false
 
+        property bool applyLightModeFix: Theme.isLightMode && root.menuOpacity > 0.5
+
         signal activated
 
         implicitWidth: 140
@@ -347,26 +349,26 @@ PluginComponent {
                 yScale: xScale
                 Behavior on xScale {
                     NumberAnimation {
-                        duration: 80 * root.speedMultiplier
-                        easing.type: Easing.OutCubic
+                        duration: 150 * root.speedMultiplier
+                        easing.type: Easing.OutBack
                     }
                 }
             }
         ]
 
-        Canvas {
+        Shape {
             id: btnBg
             anchors.fill: parent
 
             property real defaultRadius: 16
-            property real hoverRadius: (width - 2) / 2
+            property real hoverRadius: Math.max(0, width - 2) / 2
 
             property real tlr: ma.containsMouse ? hoverRadius : (isFirst ? 28 : defaultRadius)
             property real tlrAnim: tlr
             Behavior on tlrAnim {
                 NumberAnimation {
-                    duration: 250 * root.speedMultiplier
-                    easing.type: Easing.OutCubic
+                    duration: 600 * root.speedMultiplier
+                    easing.type: Easing.OutExpo
                 }
             }
 
@@ -374,8 +376,8 @@ PluginComponent {
             property real trrAnim: trr
             Behavior on trrAnim {
                 NumberAnimation {
-                    duration: 250 * root.speedMultiplier
-                    easing.type: Easing.OutCubic
+                    duration: 600 * root.speedMultiplier
+                    easing.type: Easing.OutExpo
                 }
             }
 
@@ -383,8 +385,8 @@ PluginComponent {
             property real blrAnim: blr
             Behavior on blrAnim {
                 NumberAnimation {
-                    duration: 250 * root.speedMultiplier
-                    easing.type: Easing.OutCubic
+                    duration: 600 * root.speedMultiplier
+                    easing.type: Easing.OutExpo
                 }
             }
 
@@ -392,58 +394,57 @@ PluginComponent {
             property real brrAnim: brr
             Behavior on brrAnim {
                 NumberAnimation {
-                    duration: 250 * root.speedMultiplier
-                    easing.type: Easing.OutCubic
+                    duration: 600 * root.speedMultiplier
+                    easing.type: Easing.OutExpo
                 }
             }
 
-            property color paintColor: isPrimary ? (ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor) : (ma.containsMouse ? bgColor : Qt.rgba(1, 1, 1, 0.05))
+            property color paintColor: (isPrimary || applyLightModeFix) ? (ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor) : (ma.containsMouse ? bgColor : Qt.rgba(1, 1, 1, 0.05))
 
-            property color paintBorder: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : (ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
+            property color paintBorder: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : ((ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
 
             Behavior on paintColor {
                 ColorAnimation {
-                    duration: 250 * root.speedMultiplier
+                    duration: 150 * root.speedMultiplier
                 }
             }
             Behavior on paintBorder {
                 ColorAnimation {
-                    duration: 250 * root.speedMultiplier
+                    duration: 150 * root.speedMultiplier
                 }
             }
 
-            onTlrAnimChanged: requestPaint()
-            onTrrAnimChanged: requestPaint()
-            onBrrAnimChanged: requestPaint()
-            onBlrAnimChanged: requestPaint()
-            onPaintColorChanged: requestPaint()
-            onPaintBorderChanged: requestPaint()
-
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = paintColor;
-                ctx.strokeStyle = paintBorder;
-                ctx.lineWidth = 1;
+            ShapePath {
+                fillColor: btnBg.paintColor
+                strokeColor: btnBg.paintBorder
+                strokeWidth: 1
+                startX: 1 + btnBg.tlrAnim
+                startY: 1
                 
-                var x = 1;
-                var y = 1;
-                var w = width - 2;
-                var h = height - 2;
-                
-                ctx.beginPath();
-                ctx.moveTo(x + tlrAnim, y);
-                ctx.lineTo(x + w - trrAnim, y);
-                ctx.arcTo(x + w, y, x + w, y + trrAnim, trrAnim);
-                ctx.lineTo(x + w, y + h - brrAnim);
-                ctx.arcTo(x + w, y + h, x + w - brrAnim, y + h, brrAnim);
-                ctx.lineTo(x + blrAnim, y + h);
-                ctx.arcTo(x, y + h, x, y + h - blrAnim, blrAnim);
-                ctx.lineTo(x, y + tlrAnim);
-                ctx.arcTo(x, y, x + tlrAnim, y, tlrAnim);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+                PathLine { x: Math.max(0, btnBg.width - 2) - btnBg.trrAnim + 1; y: 1 }
+                PathArc {
+                    x: Math.max(0, btnBg.width - 2) + 1; y: 1 + btnBg.trrAnim
+                    radiusX: btnBg.trrAnim; radiusY: btnBg.trrAnim
+                    direction: PathArc.Clockwise
+                }
+                PathLine { x: Math.max(0, btnBg.width - 2) + 1; y: Math.max(0, btnBg.height - 2) - btnBg.brrAnim + 1 }
+                PathArc {
+                    x: Math.max(0, btnBg.width - 2) - btnBg.brrAnim + 1; y: Math.max(0, btnBg.height - 2) + 1
+                    radiusX: btnBg.brrAnim; radiusY: btnBg.brrAnim
+                    direction: PathArc.Clockwise
+                }
+                PathLine { x: 1 + btnBg.blrAnim; y: Math.max(0, btnBg.height - 2) + 1 }
+                PathArc {
+                    x: 1; y: Math.max(0, btnBg.height - 2) - btnBg.blrAnim + 1
+                    radiusX: btnBg.blrAnim; radiusY: btnBg.blrAnim
+                    direction: PathArc.Clockwise
+                }
+                PathLine { x: 1; y: 1 + btnBg.tlrAnim }
+                PathArc {
+                    x: 1 + btnBg.tlrAnim; y: 1
+                    radiusX: btnBg.tlrAnim; radiusY: btnBg.tlrAnim
+                    direction: PathArc.Clockwise
+                }
             }
 
             ColumnLayout {
@@ -456,22 +457,27 @@ PluginComponent {
                     Layout.alignment: Qt.AlignHCenter
 
                     Rectangle {
+                        id: bgSpinner
                         anchors.centerIn: parent
                         width: 56
                         height: 56
                         radius: ma.containsMouse ? width * 0.35 : width * 0.5
-                        color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : Qt.rgba(1, 1, 1, 0.1)
+                        color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : (applyLightModeFix ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
                         RotationAnimation on rotation {
+                            id: bgRotateAnim
                             loops: Animation.Infinite
                             from: 0
                             to: 360
                             duration: 2000 * root.speedMultiplier
                             running: ma.containsMouse
+                            onRunningChanged: {
+                                if (!running) bgSpinner.rotation = 0;
+                            }
                         }
                         Behavior on radius {
                             NumberAnimation {
-                                duration: 200 * root.speedMultiplier
-                                easing.type: Easing.OutCubic
+                                duration: 600 * root.speedMultiplier
+                                easing.type: Easing.OutExpo
                             }
                         }
                     }
@@ -495,8 +501,8 @@ PluginComponent {
                                 yScale: xScale
                                 Behavior on xScale {
                                     NumberAnimation {
-                                        duration: 200 * root.speedMultiplier
-                                        easing.type: Easing.OutCubic
+                                        duration: 150 * root.speedMultiplier
+                                        easing.type: Easing.OutBack
                                     }
                                 }
                             }
@@ -508,7 +514,7 @@ PluginComponent {
                             text: iconCode
                             font.family: "Material Symbols Rounded"
                             font.pixelSize: 36
-                            color: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9))
+                            color: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
                             Behavior on color {
                                 ColorAnimation {
                                     duration: 150 * root.speedMultiplier
@@ -529,7 +535,7 @@ PluginComponent {
                             anchors.fill: urlIconSrc
                             source: urlIconSrc
                             colorization: 1.0
-                            colorizationColor: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9))
+                            colorizationColor: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
                             Behavior on colorizationColor {
                                 ColorAnimation {
                                     duration: 150 * root.speedMultiplier
@@ -546,28 +552,28 @@ PluginComponent {
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
-                                to: -15
+                                to: -8
                                 duration: 80 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
-                                to: 15
+                                to: 8
                                 duration: 80 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
-                                to: -10
+                                to: -4
                                 duration: 80 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
-                                to: 10
+                                to: 4
                                 duration: 80 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
@@ -594,7 +600,7 @@ PluginComponent {
                         id: labelText
                         anchors.centerIn: parent
                         text: label
-                        color: ma.containsMouse ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7))
+                        color: applyLightModeFix ? "black" : (ma.containsMouse ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7)))
                         font.pixelSize: 14
                         font.weight: Font.Medium
                         Behavior on color {
@@ -611,8 +617,8 @@ PluginComponent {
                     width: 24
                     height: 24
                     radius: 8
-                    color: ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.1) : Qt.rgba(1, 1, 1, 0.05))
-                    border.color: ma.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
+                    color: (ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.1) : Qt.rgba(1, 1, 1, 0.05))
+                    border.color: (ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
                     border.width: 1
                     Behavior on color {
                         ColorAnimation {
@@ -627,7 +633,7 @@ PluginComponent {
                     StyledText {
                         anchors.centerIn: parent
                         text: shortcutKey
-                        color: ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4))
+                        color: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4)))
                         font.pixelSize: 11
                         font.weight: Font.Bold
                         Behavior on color {
