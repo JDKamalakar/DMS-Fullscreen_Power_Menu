@@ -57,7 +57,7 @@ PluginSettings {
                 opacity: 0.8
             }
             Column {
-                width: parent.width - 22 - 22 - Theme.spacingM * 2
+                width: Math.max(0, parent.width - 44 - Theme.spacingM * 2)
                 StyledText {
                     text: sliderSection.title
                     font.pixelSize: Theme.fontSizeMedium
@@ -72,33 +72,67 @@ PluginSettings {
                     wrapMode: Text.WordWrap
                 }
             }
-            DankIcon {
-                name: "restart_alt"
-                size: 22
+            Rectangle {
+                id: resetBtn
+                width: 32; height: 32
+                radius: Theme.cornerRadius
                 anchors.verticalCenter: parent.verticalCenter
-                opacity: slider.value !== sliderSection.defaultValue && sliderSection.sliderEnabled ? 0.8 : 0.0
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 200
-                    }
-                }
-                NumberAnimation {
-                    id: resetAnim
-                    target: slider
-                    property: "value"
-                    to: sliderSection.defaultValue
-                    duration: 300
-                    easing.type: Easing.OutCubic
-                }
-                MouseArea {
+                color: resetMa.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1) : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.04)
+                border.color: resetMa.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4) : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.15)
+                border.width: 1
+                opacity: (slider.value !== sliderSection.defaultValue && sliderSection.sliderEnabled) ? (resetMa.containsMouse ? 1.0 : 0.9) : 0.0
+                visible: opacity > 0
+                scale: resetMa.pressed ? 0.9 : (resetMa.containsMouse ? 1.05 : 1.0)
+                
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
+                Behavior on opacity { NumberAnimation { duration: 150 } }
+                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                DankRipple { 
+                    id: resetRip
                     anchors.fill: parent
+                    cornerRadius: parent.radius
+                    rippleColor: Theme.primary 
+                }
+
+                DankIcon {
+                    id: resetIcon
+                    name: "restart_alt"
+                    size: 18
+                    anchors.centerIn: parent
+                    color: resetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
+                    SequentialAnimation on rotation {
+                        running: resetMa.containsMouse; loops: Animation.Infinite
+                        NumberAnimation { to: 8; duration: 75 }
+                        NumberAnimation { to: -8; duration: 150 }
+                        NumberAnimation { to: 0; duration: 75 }
+                        onRunningChanged: { if (!running) resetIcon.rotation = 0; }
+                    }
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+
+                MouseArea {
+                    id: resetMa
+                    anchors.fill: parent
+                    hoverEnabled: true
                     enabled: slider.value !== sliderSection.defaultValue && sliderSection.sliderEnabled
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         resetAnim.restart();
                         root.saveValue(sliderSection.settingKey, sliderSection.defaultValue);
                     }
+                    onPressed: (m) => resetRip.trigger(m.x, m.y)
                 }
+            }
+
+            NumberAnimation {
+                id: resetAnim
+                target: slider
+                property: "value"
+                to: sliderSection.defaultValue
+                duration: 150
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -118,6 +152,11 @@ PluginSettings {
             onSliderValueChanged: newValue => {
                 value = newValue;
                 root.saveValue(settingKey, newValue);
+            }
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                onWheel: (wheel) => { wheel.accepted = true; }
             }
         }
     }
@@ -143,7 +182,7 @@ PluginSettings {
                 opacity: 0.8
             }
             Column {
-                width: parent.width - 22 - Theme.spacingM
+                width: Math.max(0, parent.width - 22 - Theme.spacingM)
                 StyledText {
                     text: cmdField.title
                     font.pixelSize: Theme.fontSizeMedium
@@ -206,7 +245,7 @@ PluginSettings {
 
             Column {
                 // Ensure the text column takes up the remaining space properly
-                width: parent.width - 22 - 52 - Theme.spacingM * 2
+                width: Math.max(0, parent.width - 74 - Theme.spacingM * 2)
                 spacing: 2
                 StyledText {
                     text: toggleSection.title
@@ -291,7 +330,7 @@ PluginSettings {
                         opacity: 0.8
                     }
                     Column {
-                        width: parent.width - 22 - Theme.spacingM
+                        width: Math.max(0, parent.width - 22 - Theme.spacingM)
                         StyledText {
                             text: "Menu Orientation"
                             font.pixelSize: Theme.fontSizeMedium
@@ -487,7 +526,7 @@ PluginSettings {
                         opacity: 0.8
                     }
                     Column {
-                        width: parent.width - 22 - Theme.spacingM
+                        width: Math.max(0, parent.width - 22 - Theme.spacingM)
                         StyledText {
                             text: "IPC Commands & Shortcuts"
                             font.pixelSize: Theme.fontSizeMedium
