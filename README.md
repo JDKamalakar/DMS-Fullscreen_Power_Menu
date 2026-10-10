@@ -48,7 +48,7 @@ Material 3-inspired Fullscreen Power Menu for Dank Material Shell – lock, slee
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Before reporting a new issue, take a look at the [FAQ](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/wiki), the [changelog](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/releases) and the already opened [issues](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/issues).
+Before reporting a new issue, take a look at the [FAQ](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/wiki), the [changelog](CHANGELOG.md) and the already opened [issues](https://github.com/JDKamalakar/DMS-Fullscreen_Power_Menu/issues).
 
 
 ### Credits

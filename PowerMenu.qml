@@ -7,17 +7,73 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
 import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 import QtQuick.Shapes
 PluginComponent {
     id: root
 
+    PluginGlobalVar { varName: "animationsEnabled"; onValueChanged: { root.animationsEnabled = value !== false } }
+    PluginGlobalVar { varName: "animationSpeed"; onValueChanged: { root.animationSpeed = (value != null ? value : 100) } }
+    PluginGlobalVar { varName: "shapeAnimationSpeed"; onValueChanged: { root.shapeAnimationSpeed = (value != null ? value : 100) } }
+    PluginGlobalVar { varName: "primaryTintEnabled"; onValueChanged: { root.primaryTintEnabled = value === true } }
+    PluginGlobalVar { varName: "tintIntensity"; onValueChanged: { root.tintIntensityVal = (value != null ? value : 30) } }
+    PluginGlobalVar { varName: "dimOpacity"; onValueChanged: { root.dimOpacityVal = (value != null ? value : 60) } }
+    PluginGlobalVar { varName: "menuOpacity"; onValueChanged: { root.menuOpacityVal = (value != null ? value : 20) } }
+    PluginGlobalVar { varName: "menuOrientation"; onValueChanged: { root.menuOrientation = (value ? value : "dynamic") } }
+
+    Connections {
+        target: root.pluginService || (typeof PluginService !== "undefined" ? PluginService : null)
+        ignoreUnknownSignals: true
+        function onPluginDataChanged(pId) {
+            if (pId === "fullscreenPowerMenu") root.syncFromPluginData();
+        }
+        function onGlobalVarChanged(pId, varName, value) {
+            if (pId === "fullscreenPowerMenu") {
+                const effectiveValue = value !== undefined ? value : (root.pluginService ? root.pluginService.getGlobalVar(pId, varName, undefined) : undefined);
+                if (effectiveValue === undefined) return;
+
+                if (varName === "animationsEnabled") root.animationsEnabled = effectiveValue !== false;
+                else if (varName === "animationSpeed") root.animationSpeed = (effectiveValue != null ? effectiveValue : 100);
+                else if (varName === "shapeAnimationSpeed") root.shapeAnimationSpeed = (effectiveValue != null ? effectiveValue : 100);
+                else if (varName === "primaryTintEnabled") root.primaryTintEnabled = effectiveValue === true;
+                else if (varName === "tintIntensity") root.tintIntensityVal = (effectiveValue != null ? effectiveValue : 30);
+                else if (varName === "dimOpacity") root.dimOpacityVal = (effectiveValue != null ? effectiveValue : 60);
+                else if (varName === "menuOpacity") root.menuOpacityVal = (effectiveValue != null ? effectiveValue : 20);
+                else if (varName === "menuOrientation") root.menuOrientation = (effectiveValue ? effectiveValue : "dynamic");
+            }
+        }
+    }
+
     property bool animationsEnabled: pluginData ? pluginData.animationsEnabled !== false : true
+    property real animationSpeed: pluginData && pluginData.animationSpeed != null ? pluginData.animationSpeed : 100
+    property real shapeAnimationSpeed: pluginData && pluginData.shapeAnimationSpeed != null ? pluginData.shapeAnimationSpeed : 100
     property bool primaryTintEnabled: pluginData ? pluginData.primaryTintEnabled === true : false
-    property real speedMultiplier: !animationsEnabled ? 0 : (pluginData && pluginData.animationSpeed != null ? 100 / pluginData.animationSpeed : 1.0)
-    property real dimOpacity: pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity / 100 : 0.60
-    property real menuOpacity: pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity / 100 : 0.20
-    property real tintIntensity: pluginData && pluginData.tintIntensity != null ? pluginData.tintIntensity / 100 : 0.30
+    property real tintIntensityVal: pluginData && pluginData.tintIntensity != null ? pluginData.tintIntensity : 30
+    property real dimOpacityVal: pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity : 60
+    property real menuOpacityVal: pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity : 20
+    property string menuOrientation: pluginData && pluginData.menuOrientation ? pluginData.menuOrientation : "dynamic"
+
+    property real speedMultiplier: !animationsEnabled ? 0 : (root.animationSpeed > 0 ? 100 / root.animationSpeed : 1.0)
+    property real shapeSpeedMultiplier: !animationsEnabled ? 0 : (root.shapeAnimationSpeed > 0 ? 100 / root.shapeAnimationSpeed : 1.0)
+    property real shapeRateMultiplier: !animationsEnabled ? 0 : (root.shapeAnimationSpeed > 0 ? root.shapeAnimationSpeed / 100 : 1.0)
+    property real dimOpacity: root.dimOpacityVal / 100
+    property real menuOpacity: root.menuOpacityVal / 100
+    property real tintIntensity: root.tintIntensityVal / 100
+
+    function syncFromPluginData() {
+        if (!pluginData) return;
+        if (pluginData.animationsEnabled !== undefined) root.animationsEnabled = pluginData.animationsEnabled !== false;
+        if (pluginData.animationSpeed !== undefined) root.animationSpeed = pluginData.animationSpeed;
+        if (pluginData.shapeAnimationSpeed !== undefined) root.shapeAnimationSpeed = pluginData.shapeAnimationSpeed;
+        if (pluginData.primaryTintEnabled !== undefined) root.primaryTintEnabled = pluginData.primaryTintEnabled === true;
+        if (pluginData.tintIntensity !== undefined) root.tintIntensityVal = pluginData.tintIntensity;
+        if (pluginData.dimOpacity !== undefined) root.dimOpacityVal = pluginData.dimOpacity;
+        if (pluginData.menuOpacity !== undefined) root.menuOpacityVal = pluginData.menuOpacity;
+        if (pluginData.menuOrientation !== undefined) root.menuOrientation = pluginData.menuOrientation;
+    }
+
+    onPluginDataChanged: syncFromPluginData()
 
     function runCmd(proc, key, fallback) {
         root.closeMenu();
@@ -61,18 +117,18 @@ PluginComponent {
     }
 
     // -------------------------------------------------------------------------
-    // FULLSCREEN OVERLAY WINDOW
+    // 1. FULLSCREEN DIM BACKGROUND OVERLAY
     // -------------------------------------------------------------------------
 
     PanelWindow {
-        id: overlay
-        visible: false
+        id: bgOverlay
+        visible: overlay.visible
         color: "transparent"
 
-        WlrLayershell.namespace: "dms:plugins:fullscreenPowerMenu"
+        WlrLayershell.namespace: "dms:plugins:fullscreenPowerMenu:backdrop"
         WlrLayershell.layer: WlrLayershell.Overlay
         WlrLayershell.exclusiveZone: -1
-        WlrLayershell.keyboardFocus: overlay.visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         anchors {
             top: true
@@ -84,7 +140,7 @@ PluginComponent {
         Rectangle {
             anchors.fill: parent
             color: "#000000"
-            opacity: overlay.visible ? root.dimOpacity : 0
+            opacity: bgOverlay.visible ? root.dimOpacity : 0
             Behavior on opacity {
                 NumberAnimation {
                     duration: 400 * root.speedMultiplier
@@ -97,12 +153,35 @@ PluginComponent {
                 onClicked: root.closeMenu()
             }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. FLOATING POWER MENU WINDOW (BLURRABLE BY NIRI)
+    // -------------------------------------------------------------------------
+
+    PanelWindow {
+        id: overlay
+        visible: false
+        color: "transparent"
+
+        WlrLayershell.namespace: "dms:plugins:fullscreenPowerMenu:menu"
+        WlrLayershell.layer: WlrLayershell.Overlay
+        WlrLayershell.exclusiveZone: -1
+        WlrLayershell.keyboardFocus: overlay.visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        implicitWidth: mainRow.implicitWidth + 48
+        implicitHeight: mainRow.implicitHeight + 48
+
+        anchors {
+            top: false
+            left: false
+            right: false
+            bottom: false
+        }
 
         Item {
             id: menuContainer
-            anchors.centerIn: parent
-            width: mainRow.implicitWidth + 48
-            height: mainRow.implicitHeight + 48
+            anchors.fill: parent
 
             scale: overlay.visible ? 1.0 : 0.95
             opacity: overlay.visible ? 1.0 : 0.0
@@ -149,7 +228,7 @@ PluginComponent {
             Rectangle {
                 id: menuCard
                 anchors.fill: parent
-                radius: 32
+                radius: Theme.cornerRadiusLarge
                 color: {
                     var surface = Theme.surface || Qt.rgba(0.15, 0.15, 0.15, 1);
                     if (root.primaryTintEnabled && Theme.primary) {
@@ -187,11 +266,11 @@ PluginComponent {
                 GridLayout {
                     id: mainRow
                     anchors.centerIn: parent
-                    columnSpacing: 12
-                    rowSpacing: 12
+                    columnSpacing: Theme.spacingM
+                    rowSpacing: Theme.spacingM
 
-                    property string visualOrientation: pluginData && pluginData.menuOrientation ? pluginData.menuOrientation : "dynamic"
-                    property bool isVerticalCalc: visualOrientation === "vertical" || (visualOrientation === "dynamic" && overlay.height > overlay.width)
+                    property string visualOrientation: root.menuOrientation
+                    property bool isVerticalCalc: visualOrientation === "vertical" || (visualOrientation === "dynamic" && bgOverlay.height > bgOverlay.width)
 
                     columns: isVerticalCalc ? 1 : 6
                     rows: isVerticalCalc ? 6 : 1
@@ -226,8 +305,8 @@ PluginComponent {
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "dms"
                         label: "Restart DMS"
+                        iconImageSource: "file:///usr/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg"
                         shortcutKey: "D"
-                        iconImageSource: "https://raw.githubusercontent.com/AvengeMedia/DankMaterialShell/f2df53afcd0870445e7f3cd45e91ac135a04442e/assets/danklogo.svg"
                         accentColor: "#FDE047"
                         bgColor: Qt.rgba(0.99, 0.88, 0.28, 0.2)
                         onActivated: runCmd(dmsRestartProc, "dmsRestartCommand", "dms restart")
@@ -254,7 +333,14 @@ PluginComponent {
                         shortcutKey: "X"
                         accentColor: "#FDBA74"
                         bgColor: Qt.rgba(0.97, 0.58, 0.11, 0.2)
-                        onActivated: runCmd(logoutProc, "logoutCommand", "loginctl terminate-session $XDG_SESSION_ID")
+                        onActivated: {
+                            if (pluginData && pluginData.logoutCommand && pluginData.logoutCommand.trim() !== "") {
+                                runCmd(logoutProc, "logoutCommand", pluginData.logoutCommand);
+                            } else {
+                                root.closeMenu();
+                                SessionService.logout();
+                            }
+                        }
                     }
 
                     PowerButton {
@@ -340,7 +426,7 @@ PluginComponent {
         signal activated
 
         implicitWidth: 140
-        implicitHeight: 140
+        implicitHeight: 148
 
         transform: [
             Scale {
@@ -361,41 +447,42 @@ PluginComponent {
             id: btnBg
             anchors.fill: parent
 
-            property real defaultRadius: 16
+            property real defaultRadius: Theme.cornerRadius
+            property real cornerRadiusLargeVal: Theme.cornerRadiusLarge || (Theme.cornerRadius * 1.75)
             property real hoverRadius: Math.max(0, width - 2) / 2
 
-            property real tlr: ma.containsMouse ? hoverRadius : (isFirst ? 28 : defaultRadius)
+            property real tlr: ma.containsMouse ? hoverRadius : (isFirst ? cornerRadiusLargeVal : defaultRadius)
             property real tlrAnim: tlr
             Behavior on tlrAnim {
                 NumberAnimation {
-                    duration: 600 * root.speedMultiplier
+                    duration: 600 * root.shapeSpeedMultiplier
                     easing.type: Easing.OutExpo
                 }
             }
 
-            property real trr: ma.containsMouse ? hoverRadius : (isVerticalFlow ? (isFirst ? 28 : defaultRadius) : (isLast ? 28 : defaultRadius))
+            property real trr: ma.containsMouse ? hoverRadius : (isVerticalFlow ? (isFirst ? cornerRadiusLargeVal : defaultRadius) : (isLast ? cornerRadiusLargeVal : defaultRadius))
             property real trrAnim: trr
             Behavior on trrAnim {
                 NumberAnimation {
-                    duration: 600 * root.speedMultiplier
+                    duration: 600 * root.shapeSpeedMultiplier
                     easing.type: Easing.OutExpo
                 }
             }
 
-            property real blr: ma.containsMouse ? hoverRadius : (isVerticalFlow ? (isLast ? 28 : defaultRadius) : (isFirst ? 28 : defaultRadius))
+            property real blr: ma.containsMouse ? hoverRadius : (isVerticalFlow ? (isLast ? cornerRadiusLargeVal : defaultRadius) : (isFirst ? cornerRadiusLargeVal : defaultRadius))
             property real blrAnim: blr
             Behavior on blrAnim {
                 NumberAnimation {
-                    duration: 600 * root.speedMultiplier
+                    duration: 600 * root.shapeSpeedMultiplier
                     easing.type: Easing.OutExpo
                 }
             }
 
-            property real brr: ma.containsMouse ? hoverRadius : (isLast ? 28 : defaultRadius)
+            property real brr: ma.containsMouse ? hoverRadius : (isLast ? cornerRadiusLargeVal : defaultRadius)
             property real brrAnim: brr
             Behavior on brrAnim {
                 NumberAnimation {
-                    duration: 600 * root.speedMultiplier
+                    duration: 600 * root.shapeSpeedMultiplier
                     easing.type: Easing.OutExpo
                 }
             }
@@ -450,35 +537,38 @@ PluginComponent {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 10
+                spacing: 6
 
                 Item {
-                    width: 64
-                    height: 64
+                    width: 74
+                    height: 74
                     Layout.alignment: Qt.AlignHCenter
 
                     Rectangle {
-                        id: bgSpinner
+                        id: bgCircle
                         anchors.centerIn: parent
                         width: 56
                         height: 56
-                        radius: ma.containsMouse ? width * 0.35 : width * 0.5
+                        radius: width / 2
+                        visible: !ma.containsMouse
                         color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : (applyLightModeFix ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
-                        RotationAnimation on rotation {
-                            id: bgRotateAnim
-                            loops: Animation.Infinite
-                            from: 0
-                            to: 360
-                            duration: 2000 * root.speedMultiplier
-                            running: ma.containsMouse
-                            onRunningChanged: {
-                                if (!running) bgSpinner.rotation = 0;
-                            }
-                        }
-                        Behavior on radius {
-                            NumberAnimation {
-                                duration: 600 * root.speedMultiplier
-                                easing.type: Easing.OutExpo
+                    }
+
+                    DLoadingIndicator {
+                        id: shapeLoader
+                        anchors.centerIn: parent
+                        size: 94
+                        visible: ma.containsMouse
+                        running: ma.containsMouse
+                        color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.4) : (applyLightModeFix ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.4) : Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3))
+
+                        // Adjust DLoadingIndicator internal elapsed rate dynamically based on shapeAnimationSpeed
+                        FrameAnimation {
+                            running: shapeLoader.running && root.shapeRateMultiplier !== 1.0
+                            onTriggered: {
+                                // Default advances by (1.0 * frameTime * 1000).
+                                // (rate - 1.0) adjusts elapsed so total speed becomes rate * normal speed.
+                                shapeLoader.elapsed += (frameTime * 1000) * (root.shapeRateMultiplier - 1.0);
                             }
                         }
                     }
@@ -509,12 +599,11 @@ PluginComponent {
                             }
                         ]
 
-                        Text {
+                        DankIcon {
                             visible: iconCode !== ""
                             anchors.centerIn: parent
-                            text: iconCode
-                            font.family: "Material Symbols Rounded"
-                            font.pixelSize: 36
+                            name: iconCode
+                            size: 36
                             color: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
                             Behavior on color {
                                 ColorAnimation {
@@ -548,41 +637,41 @@ PluginComponent {
                             running: ma.containsMouse
                             loops: Animation.Infinite
                             PauseAnimation {
-                                duration: 1500 * root.speedMultiplier
+                                duration: 2000 * root.speedMultiplier
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
                                 to: -8
-                                duration: 80 * root.speedMultiplier
+                                duration: 140 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
                                 to: 8
-                                duration: 80 * root.speedMultiplier
+                                duration: 140 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
                                 to: -4
-                                duration: 80 * root.speedMultiplier
+                                duration: 120 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
                                 to: 4
-                                duration: 80 * root.speedMultiplier
+                                duration: 120 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: iconRotation
                                 property: "angle"
                                 to: 0
-                                duration: 80 * root.speedMultiplier
+                                duration: 120 * root.speedMultiplier
                                 easing.type: Easing.InOutQuad
                             }
                             onRunningChanged: {
@@ -602,7 +691,7 @@ PluginComponent {
                         anchors.centerIn: parent
                         text: label
                         color: applyLightModeFix ? "black" : (ma.containsMouse ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7)))
-                        font.pixelSize: 14
+                        font.pixelSize: Theme.fontSizeMedium
                         font.weight: Font.Medium
                         Behavior on color {
                             ColorAnimation {
@@ -614,10 +703,9 @@ PluginComponent {
 
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: -2
-                    width: 24
-                    height: 24
-                    radius: 8
+                    width: 22
+                    height: 22
+                    radius: Theme.cornerRadiusSmall || (Theme.cornerRadius / 2)
                     color: (ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.1) : Qt.rgba(1, 1, 1, 0.05))
                     border.color: (ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
                     border.width: 1
@@ -635,7 +723,7 @@ PluginComponent {
                         anchors.centerIn: parent
                         text: shortcutKey
                         color: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4)))
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontSizeSmall
                         font.weight: Font.Bold
                         Behavior on color {
                             ColorAnimation {
