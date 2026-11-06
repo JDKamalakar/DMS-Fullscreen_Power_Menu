@@ -21,6 +21,18 @@ PluginComponent {
     PluginGlobalVar { varName: "dimOpacity"; onValueChanged: { root.dimOpacityVal = (value != null ? value : 60) } }
     PluginGlobalVar { varName: "menuOpacity"; onValueChanged: { root.menuOpacityVal = (value != null ? value : 20) } }
     PluginGlobalVar { varName: "menuOrientation"; onValueChanged: { root.menuOrientation = (value ? value : "dynamic") } }
+    PluginGlobalVar { varName: "holdToTriggerEnabled"; onValueChanged: { root.holdToTriggerEnabled = value === true } }
+    PluginGlobalVar { varName: "holdDuration"; onValueChanged: { root.holdDurationMs = (value != null ? value : 500) } }
+    PluginGlobalVar { varName: "showLock"; onValueChanged: { root.showLock = value !== false } }
+    PluginGlobalVar { varName: "showSleep"; onValueChanged: { root.showSleep = value !== false } }
+    PluginGlobalVar { varName: "showDms"; onValueChanged: { root.showDms = value !== false } }
+    PluginGlobalVar { varName: "showRestart"; onValueChanged: { root.showRestart = value !== false } }
+    PluginGlobalVar { varName: "showLogout"; onValueChanged: { root.showLogout = value !== false } }
+    PluginGlobalVar { varName: "showPower"; onValueChanged: { root.showPower = value !== false } }
+    PluginGlobalVar { varName: "showHibernate"; onValueChanged: { root.showHibernate = value === true } }
+    PluginGlobalVar { varName: "showSoftReboot"; onValueChanged: { root.showSoftReboot = value === true } }
+    PluginGlobalVar { varName: "showSwitchUser"; onValueChanged: { root.showSwitchUser = value === true } }
+    PluginGlobalVar { varName: "showFirmware"; onValueChanged: { root.showFirmware = value === true } }
 
     Connections {
         target: root.pluginService || (typeof PluginService !== "undefined" ? PluginService : null)
@@ -41,6 +53,18 @@ PluginComponent {
                 else if (varName === "dimOpacity") root.dimOpacityVal = (effectiveValue != null ? effectiveValue : 60);
                 else if (varName === "menuOpacity") root.menuOpacityVal = (effectiveValue != null ? effectiveValue : 20);
                 else if (varName === "menuOrientation") root.menuOrientation = (effectiveValue ? effectiveValue : "dynamic");
+                else if (varName === "holdToTriggerEnabled") root.holdToTriggerEnabled = effectiveValue === true;
+                else if (varName === "holdDuration") root.holdDurationMs = (effectiveValue != null ? effectiveValue : 500);
+                else if (varName === "showLock") root.showLock = effectiveValue !== false;
+                else if (varName === "showSleep") root.showSleep = effectiveValue !== false;
+                else if (varName === "showDms") root.showDms = effectiveValue !== false;
+                else if (varName === "showRestart") root.showRestart = effectiveValue !== false;
+                else if (varName === "showLogout") root.showLogout = effectiveValue !== false;
+                else if (varName === "showPower") root.showPower = effectiveValue !== false;
+                else if (varName === "showHibernate") root.showHibernate = effectiveValue === true;
+                else if (varName === "showSoftReboot") root.showSoftReboot = effectiveValue !== false && (effectiveValue === true || effectiveValue === "true");
+                else if (varName === "showSwitchUser") root.showSwitchUser = effectiveValue === true;
+                else if (varName === "showFirmware") root.showFirmware = effectiveValue === true;
             }
         }
     }
@@ -53,6 +77,76 @@ PluginComponent {
     property real dimOpacityVal: pluginData && pluginData.dimOpacity != null ? pluginData.dimOpacity : 60
     property real menuOpacityVal: pluginData && pluginData.menuOpacity != null ? pluginData.menuOpacity : 20
     property string menuOrientation: pluginData && pluginData.menuOrientation ? pluginData.menuOrientation : "dynamic"
+    property bool holdToTriggerEnabled: pluginData ? pluginData.holdToTriggerEnabled === true : false
+    property int holdDurationMs: pluginData && pluginData.holdDuration != null ? pluginData.holdDuration : 500
+    property bool showLock: pluginData ? pluginData.showLock !== false : true
+    property bool showSleep: pluginData ? pluginData.showSleep !== false : true
+    property bool showDms: pluginData ? pluginData.showDms !== false : true
+    property bool showRestart: pluginData ? pluginData.showRestart !== false : true
+    property bool showLogout: pluginData ? pluginData.showLogout !== false : true
+    property bool showPower: pluginData ? pluginData.showPower !== false : true
+    property bool showHibernate: pluginData ? pluginData.showHibernate === true : false
+    property bool showSoftReboot: pluginData ? pluginData.showSoftReboot === true : false
+    property bool showSwitchUser: pluginData ? pluginData.showSwitchUser === true : false
+    property bool showFirmware: pluginData ? pluginData.showFirmware === true : false
+
+    property string activeHoldButtonId: ""
+    property real holdProgress: 0.0
+
+    Timer {
+        id: holdProgressTimer
+        interval: 16
+        repeat: true
+        onTriggered: {
+            if (!root.holdToTriggerEnabled || root.activeHoldButtonId === "" || root.holdDurationMs <= 0) {
+                stop();
+                return;
+            }
+            root.holdProgress = Math.min(1.0, root.holdProgress + (16 / Math.max(50, root.holdDurationMs)));
+            if (root.holdProgress >= 1.0) {
+                stop();
+                root.completeHold();
+            }
+        }
+    }
+
+    function startHold(btnId) {
+        if (!root.holdToTriggerEnabled || root.holdDurationMs <= 0) {
+            triggerButton(btnId);
+            return;
+        }
+        root.activeHoldButtonId = btnId;
+        root.holdProgress = 0.0;
+        holdProgressTimer.restart();
+    }
+
+    function cancelHold() {
+        if (root.activeHoldButtonId === "") return;
+        holdProgressTimer.stop();
+        root.activeHoldButtonId = "";
+        root.holdProgress = 0.0;
+    }
+
+    function completeHold() {
+        var btnId = root.activeHoldButtonId;
+        root.cancelHold();
+        if (btnId !== "") {
+            triggerButton(btnId);
+        }
+    }
+
+    function triggerButton(btnId) {
+        if (btnId === "lock" && root.showLock) lockBtn.activated();
+        else if (btnId === "sleep" && root.showSleep) sleepBtn.activated();
+        else if (btnId === "dms" && root.showDms) dmsBtn.activated();
+        else if (btnId === "restart" && root.showRestart) restartBtn.activated();
+        else if (btnId === "logout" && root.showLogout) logoutBtn.activated();
+        else if (btnId === "power" && root.showPower) powerBtn.activated();
+        else if (btnId === "hibernate" && root.showHibernate) hibernateBtn.activated();
+        else if (btnId === "softreboot" && root.showSoftReboot) softRebootBtn.activated();
+        else if (btnId === "switchuser" && root.showSwitchUser) switchUserBtn.activated();
+        else if (btnId === "firmware" && root.showFirmware) firmwareBtn.activated();
+    }
 
     property real speedMultiplier: !animationsEnabled ? 0 : (root.animationSpeed > 0 ? 100 / root.animationSpeed : 1.0)
     property real shapeSpeedMultiplier: !animationsEnabled ? 0 : (root.shapeAnimationSpeed > 0 ? 100 / root.shapeAnimationSpeed : 1.0)
@@ -71,6 +165,18 @@ PluginComponent {
         if (pluginData.dimOpacity !== undefined) root.dimOpacityVal = pluginData.dimOpacity;
         if (pluginData.menuOpacity !== undefined) root.menuOpacityVal = pluginData.menuOpacity;
         if (pluginData.menuOrientation !== undefined) root.menuOrientation = pluginData.menuOrientation;
+        if (pluginData.holdToTriggerEnabled !== undefined) root.holdToTriggerEnabled = pluginData.holdToTriggerEnabled === true;
+        if (pluginData.holdDuration !== undefined) root.holdDurationMs = pluginData.holdDuration;
+        if (pluginData.showLock !== undefined) root.showLock = pluginData.showLock !== false;
+        if (pluginData.showSleep !== undefined) root.showSleep = pluginData.showSleep !== false;
+        if (pluginData.showDms !== undefined) root.showDms = pluginData.showDms !== false;
+        if (pluginData.showRestart !== undefined) root.showRestart = pluginData.showRestart !== false;
+        if (pluginData.showLogout !== undefined) root.showLogout = pluginData.showLogout !== false;
+        if (pluginData.showPower !== undefined) root.showPower = pluginData.showPower !== false;
+        if (pluginData.showHibernate !== undefined) root.showHibernate = pluginData.showHibernate === true;
+        if (pluginData.showSoftReboot !== undefined) root.showSoftReboot = pluginData.showSoftReboot === true;
+        if (pluginData.showSwitchUser !== undefined) root.showSwitchUser = pluginData.showSwitchUser === true;
+        if (pluginData.showFirmware !== undefined) root.showFirmware = pluginData.showFirmware === true;
     }
 
     onPluginDataChanged: syncFromPluginData()
@@ -179,6 +285,17 @@ PluginComponent {
             bottom: false
         }
 
+        BackgroundEffect.blurRegion: visible ? menuBlurRegion : null
+
+        Region {
+            id: menuBlurRegion
+            x: menuCard.x
+            y: menuCard.y
+            width: menuCard.width
+            height: menuCard.height
+            radius: Theme.cornerRadiusLarge
+        }
+
         Item {
             id: menuContainer
             anchors.fill: parent
@@ -272,17 +389,35 @@ PluginComponent {
                     property string visualOrientation: root.menuOrientation
                     property bool isVerticalCalc: visualOrientation === "vertical" || (visualOrientation === "dynamic" && bgOverlay.height > bgOverlay.width)
 
-                    columns: isVerticalCalc ? 1 : 6
-                    rows: isVerticalCalc ? 6 : 1
+                    readonly property var visibleButtonList: {
+                        var list = [];
+                        if (root.showLock) list.push(lockBtn);
+                        if (root.showSleep) list.push(sleepBtn);
+                        if (root.showDms) list.push(dmsBtn);
+                        if (root.showRestart) list.push(restartBtn);
+                        if (root.showLogout) list.push(logoutBtn);
+                        if (root.showHibernate) list.push(hibernateBtn);
+                        if (root.showSoftReboot) list.push(softRebootBtn);
+                        if (root.showSwitchUser) list.push(switchUserBtn);
+                        if (root.showFirmware) list.push(firmwareBtn);
+                        if (root.showPower) list.push(powerBtn);
+                        return list;
+                    }
+                    readonly property int visibleCount: visibleButtonList.length
+
+                    columns: isVerticalCalc ? 1 : Math.max(1, visibleCount)
+                    rows: isVerticalCalc ? Math.max(1, visibleCount) : 1
 
                     PowerButton {
                         id: lockBtn
+                        visible: root.showLock
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "lock"
                         label: "Lock"
                         iconCode: "lock"
                         shortcutKey: "L"
-                        isFirst: true
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === lockBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === lockBtn
                         accentColor: "#93C5FD"
                         bgColor: Qt.rgba(0.23, 0.51, 0.96, 0.2)
                         onActivated: runCmd(lockProc, "lockCommand", "loginctl lock-session")
@@ -290,11 +425,14 @@ PluginComponent {
 
                     PowerButton {
                         id: sleepBtn
+                        visible: root.showSleep
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "sleep"
                         label: "Sleep"
                         iconCode: "bedtime"
                         shortcutKey: "S"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === sleepBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === sleepBtn
                         accentColor: "#A5B4FC"
                         bgColor: Qt.rgba(0.39, 0.38, 0.96, 0.2)
                         onActivated: runCmd(suspendProc, "suspendCommand", "systemctl suspend")
@@ -302,11 +440,14 @@ PluginComponent {
 
                     PowerButton {
                         id: dmsBtn
+                        visible: root.showDms
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "dms"
                         label: "Restart DMS"
-                        iconImageSource: "file:///usr/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg"
+                        iconImageSource: Qt.resolvedUrl("assets/duxlogo.svg")
                         shortcutKey: "D"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === dmsBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === dmsBtn
                         accentColor: "#FDE047"
                         bgColor: Qt.rgba(0.99, 0.88, 0.28, 0.2)
                         onActivated: runCmd(dmsRestartProc, "dmsRestartCommand", "dms restart")
@@ -314,11 +455,14 @@ PluginComponent {
 
                     PowerButton {
                         id: restartBtn
+                        visible: root.showRestart
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "restart"
                         label: "Restart"
                         iconCode: "restart_alt"
                         shortcutKey: "R"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === restartBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === restartBtn
                         accentColor: "#86EFAC"
                         bgColor: Qt.rgba(0.13, 0.77, 0.36, 0.2)
                         onActivated: runCmd(rebootProc, "rebootCommand", "systemctl reboot")
@@ -326,11 +470,14 @@ PluginComponent {
 
                     PowerButton {
                         id: logoutBtn
+                        visible: root.showLogout
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "logout"
                         label: "Log Out"
                         iconCode: "logout"
                         shortcutKey: "X"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === logoutBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === logoutBtn
                         accentColor: "#FDBA74"
                         bgColor: Qt.rgba(0.97, 0.58, 0.11, 0.2)
                         onActivated: {
@@ -344,13 +491,75 @@ PluginComponent {
                     }
 
                     PowerButton {
+                        id: hibernateBtn
+                        visible: root.showHibernate
+                        isVerticalFlow: mainRow.isVerticalCalc
+                        buttonId: "hibernate"
+                        label: "Hibernate"
+                        iconCode: "ac_unit"
+                        shortcutKey: "H"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === hibernateBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === hibernateBtn
+                        accentColor: "#67E8F9"
+                        bgColor: Qt.rgba(0.06, 0.71, 0.83, 0.2)
+                        onActivated: runCmd(hibernateProc, "hibernateCommand", "systemctl hibernate")
+                    }
+
+                    PowerButton {
+                        id: softRebootBtn
+                        visible: root.showSoftReboot
+                        isVerticalFlow: mainRow.isVerticalCalc
+                        buttonId: "softreboot"
+                        label: "Soft Reboot"
+                        iconCode: "autorenew"
+                        shortcutKey: "B"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === softRebootBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === softRebootBtn
+                        accentColor: "#C084FC"
+                        bgColor: Qt.rgba(0.75, 0.52, 0.99, 0.2)
+                        onActivated: runCmd(softRebootProc, "softRebootCommand", "systemctl soft-reboot")
+                    }
+
+                    PowerButton {
+                        id: switchUserBtn
+                        visible: root.showSwitchUser
+                        isVerticalFlow: mainRow.isVerticalCalc
+                        buttonId: "switchuser"
+                        label: "Switch User"
+                        iconCode: "switch_account"
+                        shortcutKey: "U"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === switchUserBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === switchUserBtn
+                        accentColor: "#F472B6"
+                        bgColor: Qt.rgba(0.96, 0.45, 0.71, 0.2)
+                        onActivated: runCmd(switchUserProc, "switchUserCommand", "dm-tool switch-to-greeter")
+                    }
+
+                    PowerButton {
+                        id: firmwareBtn
+                        visible: root.showFirmware
+                        isVerticalFlow: mainRow.isVerticalCalc
+                        buttonId: "firmware"
+                        label: "UEFI / BIOS"
+                        iconCode: "settings_suggest"
+                        shortcutKey: "F"
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === firmwareBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === firmwareBtn
+                        accentColor: "#F59E0B"
+                        bgColor: Qt.rgba(0.96, 0.62, 0.04, 0.2)
+                        onActivated: runCmd(firmwareProc, "firmwareCommand", "systemctl reboot --firmware-setup")
+                    }
+
+                    PowerButton {
                         id: powerBtn
+                        visible: root.showPower
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "power"
                         label: "Power Off"
                         iconCode: "power_settings_new"
                         shortcutKey: "P"
-                        isLast: true
+                        isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === powerBtn
+                        isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === powerBtn
                         isPrimary: true
                         accentColor: "#FCA5A5"
                         bgColor: Qt.rgba(0.94, 0.26, 0.26, 0.2)
@@ -363,24 +572,86 @@ PluginComponent {
         Item {
             anchors.fill: parent
             focus: overlay.visible
-            Keys.onEscapePressed: root.closeMenu()
+            Keys.onEscapePressed: {
+                root.cancelHold();
+                root.closeMenu();
+            }
             Keys.onPressed: function (event) {
-                if (event.key === Qt.Key_L)
-                    lockBtn.activated();
-                else if (event.key === Qt.Key_S)
-                    sleepBtn.activated();
-                else if (event.key === Qt.Key_D)
-                    dmsBtn.activated();
-                else if (event.key === Qt.Key_R)
-                    restartBtn.activated();
-                else if (event.key === Qt.Key_X)
-                    logoutBtn.activated();
-                else if (event.key === Qt.Key_P)
-                    powerBtn.activated();
+                if (event.isAutoRepeat) {
+                    event.accepted = true;
+                    return;
+                }
+                if (event.key === Qt.Key_L && root.showLock) {
+                    root.startHold("lock");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_S && root.showSleep) {
+                    root.startHold("sleep");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_D && root.showDms) {
+                    root.startHold("dms");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_R && root.showRestart) {
+                    root.startHold("restart");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_X && root.showLogout) {
+                    root.startHold("logout");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_H && root.showHibernate) {
+                    root.startHold("hibernate");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_B && root.showSoftReboot) {
+                    root.startHold("softreboot");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_U && root.showSwitchUser) {
+                    root.startHold("switchuser");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_F && root.showFirmware) {
+                    root.startHold("firmware");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_P && root.showPower) {
+                    root.startHold("power");
+                    event.accepted = true;
+                }
+            }
+            Keys.onReleased: function (event) {
+                if (event.isAutoRepeat) {
+                    event.accepted = true;
+                    return;
+                }
+                if (event.key === Qt.Key_L && root.activeHoldButtonId === "lock") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_S && root.activeHoldButtonId === "sleep") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_D && root.activeHoldButtonId === "dms") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_R && root.activeHoldButtonId === "restart") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_X && root.activeHoldButtonId === "logout") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_H && root.activeHoldButtonId === "hibernate") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_B && root.activeHoldButtonId === "softreboot") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_U && root.activeHoldButtonId === "switchuser") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_F && root.activeHoldButtonId === "firmware") {
+                    root.cancelHold();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_P && root.activeHoldButtonId === "power") {
+                    root.cancelHold();
+                    event.accepted = true;
+                }
             }
         }
     }
-
     // -------------------------------------------------------------------------
     // PROCESSES
     // -------------------------------------------------------------------------
@@ -403,6 +674,18 @@ PluginComponent {
     Process {
         id: dmsRestartProc
     }
+    Process {
+        id: hibernateProc
+    }
+    Process {
+        id: softRebootProc
+    }
+    Process {
+        id: switchUserProc
+    }
+    Process {
+        id: firmwareProc
+    }
 
     // -------------------------------------------------------------------------
     // POWER BUTTON COMPONENT
@@ -422,6 +705,7 @@ PluginComponent {
         property bool isLast: false
 
         property bool applyLightModeFix: Theme.isLightMode && root.menuOpacity > 0.5
+        readonly property bool isHoldingThis: root.activeHoldButtonId === buttonId && root.holdProgress > 0
 
         signal activated
 
@@ -487,9 +771,28 @@ PluginComponent {
                 }
             }
 
-            property color paintColor: (isPrimary || applyLightModeFix) ? (ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor) : (ma.containsMouse ? bgColor : Qt.rgba(1, 1, 1, 0.05))
+            property color paintColor: {
+                if (isHoldingThis) {
+                    return Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35);
+                }
+                if (isPrimary || applyLightModeFix) {
+                    return ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor;
+                }
+                return ma.containsMouse ? bgColor : Qt.rgba(1, 1, 1, 0.05);
+            }
 
-            property color paintBorder: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : ((ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
+            property color paintBorder: {
+                if (isHoldingThis) {
+                    return accentColor;
+                }
+                if (isPrimary) {
+                    return Qt.rgba(0.94, 0.26, 0.26, 0.3);
+                }
+                if (ma.containsMouse || applyLightModeFix) {
+                    return Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3);
+                }
+                return Qt.rgba(1, 1, 1, 0.1);
+            }
 
             Behavior on paintColor {
                 ColorAnimation {
@@ -552,6 +855,32 @@ PluginComponent {
                         radius: width / 2
                         visible: !ma.containsMouse
                         color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : (applyLightModeFix ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
+                    }
+
+                    Canvas {
+                        id: holdArcCanvas
+                        anchors.centerIn: parent
+                        width: 68
+                        height: 68
+                        visible: isHoldingThis
+                        property real progress: isHoldingThis ? root.holdProgress : 0.0
+                        onProgressChanged: requestPaint()
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.reset();
+                            if (progress <= 0) return;
+                            var centerX = width / 2;
+                            var centerY = height / 2;
+                            var radius = width / 2 - 4;
+                            var startAngle = -Math.PI / 2;
+                            var endAngle = startAngle + (Math.PI * 2 * Math.min(1.0, progress));
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
+                            ctx.strokeStyle = accentColor;
+                            ctx.lineWidth = 3.5;
+                            ctx.lineCap = "round";
+                            ctx.stroke();
+                        }
                     }
 
                     DLoadingIndicator {
@@ -739,7 +1068,26 @@ PluginComponent {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: parent.parent.activated()
+                onPressed: {
+                    if (root.holdToTriggerEnabled) {
+                        root.startHold(buttonId);
+                    }
+                }
+                onReleased: {
+                    if (root.holdToTriggerEnabled && root.activeHoldButtonId === buttonId) {
+                        root.cancelHold();
+                    }
+                }
+                onCanceled: {
+                    if (root.holdToTriggerEnabled && root.activeHoldButtonId === buttonId) {
+                        root.cancelHold();
+                    }
+                }
+                onClicked: {
+                    if (!root.holdToTriggerEnabled) {
+                        parent.parent.activated();
+                    }
+                }
             }
         }
     }

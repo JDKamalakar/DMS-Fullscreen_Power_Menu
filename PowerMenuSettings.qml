@@ -3,7 +3,9 @@ import QtQuick.Layouts
 import Quickshell
 import qs.Common
 import qs.Widgets
+import Quickshell.Io
 import qs.Modules.Plugins
+import qs.Modules.Settings.Widgets
 import qs.Services
 
 PluginSettings {
@@ -463,7 +465,7 @@ PluginSettings {
         spacing: Theme.spacingL
 
         function loadValue() {
-            var groups = [appearanceGroup, orientationGroup, cmdGroup];
+            var groups = [appearanceGroup, interactionGroup, visibleGroup, orientationGroup, cmdGroup];
             for (var g = 0; g < groups.length; g++) {
                 var group = groups[g];
                 for (var i = 0; i < group.children.length; i++) {
@@ -568,7 +570,151 @@ PluginSettings {
         }
 
         // ---------------------------------------------------------------------
-        // 2. ORIENTATION PREFERENCES
+        // 2. INTERACTION & TRIGGER BEHAVIOR
+        // ---------------------------------------------------------------------
+        Column {
+            width: parent.width
+            spacing: Theme.spacingS
+
+            SectionHeader {
+                title: "Interaction & Safety"
+                iconName: "touch_app"
+            }
+
+            Column {
+                id: interactionGroup
+                width: parent.width
+                spacing: 2
+
+                SettingsToggleItem {
+                    id: holdToggle
+                    iconName: "timer"
+                    title: "Press & Hold to Trigger"
+                    description: "Require pressing and holding button or keyboard shortcut to activate power actions"
+                    settingKey: "holdToTriggerEnabled"
+                    defaultValue: false
+                    isFirst: true
+                }
+
+                SettingsSliderItem {
+                    iconName: "hourglass_bottom"
+                    title: "Hold Duration"
+                    description: "Milliseconds button or shortcut key must be held before activating"
+                    settingKey: "holdDuration"
+                    defaultValue: 500
+                    minimumValue: 100
+                    maximumValue: 3000
+                    unit: "ms"
+                    sliderEnabled: holdToggle.checked
+                    opacity: holdToggle.checked ? 1.0 : 0.4
+                    isLast: true
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. VISIBLE ACTIONS
+        // ---------------------------------------------------------------------
+        Column {
+            width: parent.width
+            spacing: Theme.spacingS
+
+            SectionHeader {
+                title: "Visible Actions"
+                iconName: "visibility"
+            }
+
+            Column {
+                id: visibleGroup
+                width: parent.width
+                spacing: 2
+
+                SettingsToggleItem {
+                    iconName: "lock"
+                    title: "Show Lock Screen"
+                    description: "Show the lock screen action button"
+                    settingKey: "showLock"
+                    defaultValue: true
+                    isFirst: true
+                }
+
+                SettingsToggleItem {
+                    iconName: "bedtime"
+                    title: "Show Sleep / Suspend"
+                    description: "Show the suspend/sleep action button"
+                    settingKey: "showSleep"
+                    defaultValue: true
+                }
+
+                SettingsToggleItem {
+                    iconName: "refresh"
+                    title: "Show Restart DMS / DUX"
+                    description: "Show the restart shell action button"
+                    settingKey: "showDms"
+                    defaultValue: true
+                }
+
+                SettingsToggleItem {
+                    iconName: "restart_alt"
+                    title: "Show Restart"
+                    description: "Show the system reboot action button"
+                    settingKey: "showRestart"
+                    defaultValue: true
+                }
+
+                SettingsToggleItem {
+                    iconName: "logout"
+                    title: "Show Log Out"
+                    description: "Show the session log out action button"
+                    settingKey: "showLogout"
+                    defaultValue: true
+                }
+
+                SettingsToggleItem {
+                    iconName: "ac_unit"
+                    title: "Show Hibernate"
+                    description: "Show the system hibernate action button"
+                    settingKey: "showHibernate"
+                    defaultValue: false
+                }
+
+                SettingsToggleItem {
+                    iconName: "autorenew"
+                    title: "Show Soft Reboot"
+                    description: "Show the systemd userspace soft-reboot button"
+                    settingKey: "showSoftReboot"
+                    defaultValue: false
+                }
+
+                SettingsToggleItem {
+                    iconName: "switch_account"
+                    title: "Show Switch User"
+                    description: "Show the switch user / greeter action button"
+                    settingKey: "showSwitchUser"
+                    defaultValue: false
+                }
+
+                SettingsToggleItem {
+                    iconName: "settings_suggest"
+                    title: "Show UEFI / BIOS Setup"
+                    description: "Show the reboot to UEFI / BIOS firmware setup button"
+                    settingKey: "showFirmware"
+                    defaultValue: false
+                }
+
+                SettingsToggleItem {
+                    iconName: "power_settings_new"
+                    title: "Show Power Off"
+                    description: "Show the system shutdown action button"
+                    settingKey: "showPower"
+                    defaultValue: true
+                    isLast: true
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 4. ORIENTATION PREFERENCES
         // ---------------------------------------------------------------------
         Column {
             width: parent.width
@@ -692,7 +838,7 @@ PluginSettings {
         }
 
         // ---------------------------------------------------------------------
-        // 3. ACTIONS & COMMANDS
+        // 5. ACTIONS & COMMANDS
         // ---------------------------------------------------------------------
         Column {
             width: parent.width
@@ -734,6 +880,38 @@ PluginSettings {
                 }
 
                 CommandFieldItem {
+                    iconName: "ac_unit"
+                    title: "Hibernate Command"
+                    description: "Command executed to hibernate the machine to disk"
+                    settingKey: "hibernateCommand"
+                    defaultValue: "systemctl hibernate"
+                }
+
+                CommandFieldItem {
+                    iconName: "autorenew"
+                    title: "Soft Reboot Command"
+                    description: "Command executed to soft-reboot userspace without restarting kernel"
+                    settingKey: "softRebootCommand"
+                    defaultValue: "systemctl soft-reboot"
+                }
+
+                CommandFieldItem {
+                    iconName: "switch_account"
+                    title: "Switch User Command"
+                    description: "Command executed to switch user session or return to greeter"
+                    settingKey: "switchUserCommand"
+                    defaultValue: "dm-tool switch-to-greeter"
+                }
+
+                CommandFieldItem {
+                    iconName: "settings_suggest"
+                    title: "Firmware Setup Command"
+                    description: "Command executed to reboot directly into UEFI / BIOS firmware setup"
+                    settingKey: "firmwareCommand"
+                    defaultValue: "systemctl reboot --firmware-setup"
+                }
+
+                CommandFieldItem {
                     iconName: "logout"
                     title: "Log Out Command"
                     description: "Command to log out of the session"
@@ -751,7 +929,7 @@ PluginSettings {
 
                 CommandFieldItem {
                     iconName: "terminal"
-                    title: "Restart DMS Command"
+                    title: "Restart DMS / DUX Command"
                     description: "Command to restart the shell"
                     settingKey: "dmsRestartCommand"
                     defaultValue: "dms restart"
@@ -761,7 +939,7 @@ PluginSettings {
         }
 
         // ---------------------------------------------------------------------
-        // 4. IPC COMMANDS & SHORTCUTS
+        // 6. IPC COMMANDS & SHORTCUTS
         // ---------------------------------------------------------------------
         Column {
             width: parent.width
@@ -894,6 +1072,198 @@ PluginSettings {
                     CopyBox {
                         label: "Niri Bind Configuration"
                         text: "Mod+Delete { spawn \"dms\" \"ipc\" \"call\" \"fullscreenPowerMenu\" \"toggle\"; }"
+                    }
+                }
+            }
+        }
+        // ---------------------------------------------------------------------
+        // 7. REQUIRED PACKAGES
+        // ---------------------------------------------------------------------
+        Item {
+            id: depsWrapper
+            width: parent.width
+            implicitHeight: depsCol.implicitHeight
+
+            property bool expanded: false
+            property var depStatus: ({
+                "systemctl": true,
+                "loginctl": true,
+                "dms": true,
+                "python3": true,
+                "dm-tool": true
+            })
+            property bool isChecking: true
+
+            Process {
+                id: depChecker
+                command: [
+                    "bash", "-c",
+                    "python3 -c \"import json, shutil, sys\n" +
+                    "cmds = [\n" +
+                    "  ('systemctl', 'systemctl'),\n" +
+                    "  ('loginctl', 'loginctl'),\n" +
+                    "  ('dms', 'dms'),\n" +
+                    "  ('python3', 'python3'),\n" +
+                    "  ('dm-tool', 'dm-tool')\n" +
+                    "]\n" +
+                    "results = {k: bool(shutil.which(cmd)) for k, cmd in cmds}\n" +
+                    "sys.stdout.write(json.dumps(results))\n\""
+                ]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        depsWrapper.isChecking = false;
+                        try {
+                            if (text && text.trim() !== "") {
+                                depsWrapper.depStatus = JSON.parse(text.trim());
+                            }
+                        } catch (e) {
+                            console.warn("Failed to parse dependency status:", e);
+                        }
+                    }
+                }
+            }
+
+            Component.onCompleted: {
+                depChecker.running = true;
+            }
+
+            Column {
+                id: depsCol
+                width: parent.width
+                spacing: 0
+
+                Item {
+                    id: depsHeaderRow
+                    width: parent.width
+                    height: 40
+
+                    Row {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.spacingM
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingXS
+
+                        DankIcon {
+                            name: "extension"
+                            size: 16
+                            color: Theme.primary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        StyledText {
+                            text: I18n.tr("Required packages")
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.weight: Font.DemiBold
+                            color: Theme.primary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    DankIcon {
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.spacingM
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "expand_more"
+                        size: Theme.iconSize || 20
+                        color: Theme.surfaceVariantText
+                        rotation: depsWrapper.expanded ? 180 : 0
+
+                        Behavior on rotation {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            depsWrapper.expanded = !depsWrapper.expanded;
+                            if (depsWrapper.expanded) {
+                                depsWrapper.isChecking = true;
+                                depChecker.running = true;
+                            }
+                        }
+                    }
+                }
+
+                Item {
+                    id: animHost
+                    width: parent.width
+                    clip: true
+                    height: depsWrapper.expanded ? groupContent.implicitHeight : 0
+                    opacity: depsWrapper.expanded ? 1.0 : 0.0
+                    visible: height > 0 || depsWrapper.expanded
+
+                    Behavior on height {
+                        NumberAnimation {
+                            duration: 250
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 200
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    SettingsGroup {
+                        id: groupContent
+                        width: parent.width
+
+                        SettingsRow {
+                            visible: depsWrapper.isChecking
+                            iconName: "hourglass_top"
+                            title: I18n.tr("Checking packages...")
+                        }
+
+                        Repeater {
+                            model: [
+                                {
+                                    id: "systemctl",
+                                    pkg: "systemd (systemctl)",
+                                    features: "Power management actions (poweroff, reboot, suspend, hibernate, soft-reboot)",
+                                    present: Boolean(depsWrapper.depStatus["systemctl"])
+                                },
+                                {
+                                    id: "loginctl",
+                                    pkg: "systemd-logind (loginctl)",
+                                    features: "Session management, screen locking, user session switching and logout",
+                                    present: Boolean(depsWrapper.depStatus["loginctl"])
+                                },
+                                {
+                                    id: "dms",
+                                    pkg: "dms / dux",
+                                    features: "DankMaterialShell / Dux desktop environment shell and IPC daemon control",
+                                    present: Boolean(depsWrapper.depStatus["dms"])
+                                },
+                                {
+                                    id: "python3",
+                                    pkg: "python3",
+                                    features: "Running environment capability checks and diagnostic scripts",
+                                    present: Boolean(depsWrapper.depStatus["python3"])
+                                },
+                                {
+                                    id: "dm-tool",
+                                    pkg: "display-manager (dm-tool)",
+                                    features: "Switching to display manager greeter screen on multi-user systems",
+                                    present: Boolean(depsWrapper.depStatus["dm-tool"])
+                                }
+                            ]
+
+                            delegate: SettingsRow {
+                                iconName: modelData.present ? "check_circle" : "error"
+                                iconColor: modelData.present ? Theme.success : Theme.error
+                                title: modelData.pkg
+                                subtitle: I18n.tr("Used for: %1").arg(modelData.features)
+                                trailingBadge: modelData.present ? I18n.tr("Installed") : I18n.tr("Missing")
+                                trailingBadgeColor: modelData.present ? Theme.surfaceVariantText : Theme.error
+                            }
+                        }
                     }
                 }
             }
