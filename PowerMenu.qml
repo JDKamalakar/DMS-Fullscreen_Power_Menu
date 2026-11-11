@@ -9,6 +9,7 @@ import qs.Common
 import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Plugins
+import qs.Services
 import QtQuick.Shapes
 PluginComponent {
     id: root
@@ -110,9 +111,26 @@ PluginComponent {
         }
     }
 
+    Timer {
+        id: instantShapeTimer
+        interval: 350
+        repeat: false
+        property string pendingBtnId: ""
+        onTriggered: {
+            var bId = pendingBtnId;
+            pendingBtnId = "";
+            root.activeHoldButtonId = "";
+            if (bId !== "") {
+                triggerButton(bId);
+            }
+        }
+    }
+
     function startHold(btnId) {
         if (!root.holdToTriggerEnabled || root.holdDurationMs <= 0) {
-            triggerButton(btnId);
+            root.activeHoldButtonId = btnId;
+            instantShapeTimer.pendingBtnId = btnId;
+            instantShapeTimer.restart();
             return;
         }
         root.activeHoldButtonId = btnId;
@@ -121,6 +139,10 @@ PluginComponent {
     }
 
     function cancelHold() {
+        if (instantShapeTimer.running) {
+            instantShapeTimer.stop();
+            instantShapeTimer.pendingBtnId = "";
+        }
         if (root.activeHoldButtonId === "") return;
         holdProgressTimer.stop();
         root.activeHoldButtonId = "";
@@ -181,10 +203,17 @@ PluginComponent {
 
     onPluginDataChanged: syncFromPluginData()
 
-    function runCmd(proc, key, fallback) {
+    function runCmd(proc, key, fallback, dmsAction) {
         root.closeMenu();
-        proc.command = (pluginData && pluginData[key] ? pluginData[key] : fallback).split(" ");
-        proc.running = true;
+        if (pluginData && pluginData[key] && pluginData[key].trim() !== "") {
+            proc.command = pluginData[key].split(" ");
+            proc.running = true;
+        } else if (dmsAction && typeof SessionService !== "undefined" && SessionService && SessionService.executePowerAction) {
+            SessionService.executePowerAction(dmsAction);
+        } else {
+            proc.command = fallback.split(" ");
+            proc.running = true;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -420,7 +449,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === lockBtn
                         accentColor: "#93C5FD"
                         bgColor: Qt.rgba(0.23, 0.51, 0.96, 0.2)
-                        onActivated: runCmd(lockProc, "lockCommand", "loginctl lock-session")
+                        onActivated: runCmd(lockProc, "lockCommand", "loginctl lock-session", "lock")
                     }
 
                     PowerButton {
@@ -435,7 +464,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === sleepBtn
                         accentColor: "#A5B4FC"
                         bgColor: Qt.rgba(0.39, 0.38, 0.96, 0.2)
-                        onActivated: runCmd(suspendProc, "suspendCommand", "systemctl suspend")
+                        onActivated: runCmd(suspendProc, "suspendCommand", "systemctl suspend", "suspend")
                     }
 
                     PowerButton {
@@ -450,7 +479,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === dmsBtn
                         accentColor: "#FDE047"
                         bgColor: Qt.rgba(0.99, 0.88, 0.28, 0.2)
-                        onActivated: runCmd(dmsRestartProc, "dmsRestartCommand", "dms restart")
+                        onActivated: runCmd(dmsRestartProc, "dmsRestartCommand", "dms restart", "restart")
                     }
 
                     PowerButton {
@@ -465,7 +494,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === restartBtn
                         accentColor: "#86EFAC"
                         bgColor: Qt.rgba(0.13, 0.77, 0.36, 0.2)
-                        onActivated: runCmd(rebootProc, "rebootCommand", "systemctl reboot")
+                        onActivated: runCmd(rebootProc, "rebootCommand", "systemctl reboot", "reboot")
                     }
 
                     PowerButton {
@@ -480,14 +509,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === logoutBtn
                         accentColor: "#FDBA74"
                         bgColor: Qt.rgba(0.97, 0.58, 0.11, 0.2)
-                        onActivated: {
-                            if (pluginData && pluginData.logoutCommand && pluginData.logoutCommand.trim() !== "") {
-                                runCmd(logoutProc, "logoutCommand", pluginData.logoutCommand);
-                            } else {
-                                root.closeMenu();
-                                SessionService.logout();
-                            }
-                        }
+                        onActivated: runCmd(logoutProc, "logoutCommand", "loginctl terminate-session", "logout")
                     }
 
                     PowerButton {
@@ -502,7 +524,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === hibernateBtn
                         accentColor: "#67E8F9"
                         bgColor: Qt.rgba(0.06, 0.71, 0.83, 0.2)
-                        onActivated: runCmd(hibernateProc, "hibernateCommand", "systemctl hibernate")
+                        onActivated: runCmd(hibernateProc, "hibernateCommand", "systemctl hibernate", "hibernate")
                     }
 
                     PowerButton {
@@ -517,7 +539,7 @@ PluginComponent {
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === softRebootBtn
                         accentColor: "#C084FC"
                         bgColor: Qt.rgba(0.75, 0.52, 0.99, 0.2)
-                        onActivated: runCmd(softRebootProc, "softRebootCommand", "systemctl soft-reboot")
+                        onActivated: runCmd(softRebootProc, "softRebootCommand", "systemctl soft-reboot", "softreboot")
                     }
 
                     PowerButton {
@@ -541,7 +563,7 @@ PluginComponent {
                         isVerticalFlow: mainRow.isVerticalCalc
                         buttonId: "firmware"
                         label: "UEFI / BIOS"
-                        iconCode: "settings_suggest"
+                        iconCode: "developer_board"
                         shortcutKey: "F"
                         isFirst: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[0] === firmwareBtn
                         isLast: mainRow.visibleButtonList.length > 0 && mainRow.visibleButtonList[mainRow.visibleButtonList.length - 1] === firmwareBtn
@@ -563,7 +585,7 @@ PluginComponent {
                         isPrimary: true
                         accentColor: "#FCA5A5"
                         bgColor: Qt.rgba(0.94, 0.26, 0.26, 0.2)
-                        onActivated: runCmd(shutdownProc, "shutdownCommand", "systemctl poweroff")
+                        onActivated: runCmd(shutdownProc, "shutdownCommand", "systemctl poweroff", "poweroff")
                     }
                 }
             }
@@ -706,6 +728,8 @@ PluginComponent {
 
         property bool applyLightModeFix: Theme.isLightMode && root.menuOpacity > 0.5
         readonly property bool isHoldingThis: root.activeHoldButtonId === buttonId && root.holdProgress > 0
+        readonly property bool isKeyboardActive: root.activeHoldButtonId === buttonId
+        readonly property bool isActivelyHovered: ma.containsMouse || isKeyboardActive
 
         signal activated
 
@@ -716,7 +740,7 @@ PluginComponent {
             Scale {
                 origin.x: width / 2
                 origin.y: height / 2
-                xScale: ma.pressed ? 0.92 : 1.0
+                xScale: (ma.pressed || isKeyboardActive) ? 0.92 : 1.0
                 yScale: xScale
                 Behavior on xScale {
                     NumberAnimation {
@@ -735,7 +759,7 @@ PluginComponent {
             property real cornerRadiusLargeVal: Theme.cornerRadiusLarge || (Theme.cornerRadius * 1.75)
             property real hoverRadius: Math.max(0, width - 2) / 2
 
-            property real tlr: ma.containsMouse ? hoverRadius : (isFirst ? cornerRadiusLargeVal : defaultRadius)
+            property real tlr: isActivelyHovered ? hoverRadius : (isFirst ? cornerRadiusLargeVal : defaultRadius)
             property real tlrAnim: tlr
             Behavior on tlrAnim {
                 NumberAnimation {
@@ -744,7 +768,7 @@ PluginComponent {
                 }
             }
 
-            property real trr: ma.containsMouse ? hoverRadius : (isVerticalFlow ? (isFirst ? cornerRadiusLargeVal : defaultRadius) : (isLast ? cornerRadiusLargeVal : defaultRadius))
+            property real trr: isActivelyHovered ? hoverRadius : (isVerticalFlow ? (isFirst ? cornerRadiusLargeVal : defaultRadius) : (isLast ? cornerRadiusLargeVal : defaultRadius))
             property real trrAnim: trr
             Behavior on trrAnim {
                 NumberAnimation {
@@ -753,7 +777,7 @@ PluginComponent {
                 }
             }
 
-            property real blr: ma.containsMouse ? hoverRadius : (isVerticalFlow ? (isLast ? cornerRadiusLargeVal : defaultRadius) : (isFirst ? cornerRadiusLargeVal : defaultRadius))
+            property real blr: isActivelyHovered ? hoverRadius : (isVerticalFlow ? (isLast ? cornerRadiusLargeVal : defaultRadius) : (isFirst ? cornerRadiusLargeVal : defaultRadius))
             property real blrAnim: blr
             Behavior on blrAnim {
                 NumberAnimation {
@@ -762,7 +786,7 @@ PluginComponent {
                 }
             }
 
-            property real brr: ma.containsMouse ? hoverRadius : (isLast ? cornerRadiusLargeVal : defaultRadius)
+            property real brr: isActivelyHovered ? hoverRadius : (isLast ? cornerRadiusLargeVal : defaultRadius)
             property real brrAnim: brr
             Behavior on brrAnim {
                 NumberAnimation {
@@ -776,9 +800,9 @@ PluginComponent {
                     return Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35);
                 }
                 if (isPrimary || applyLightModeFix) {
-                    return ma.containsMouse ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor;
+                    return isActivelyHovered ? Qt.rgba(bgColor.r, bgColor.g, bgColor.b, bgColor.a + 0.2) : bgColor;
                 }
-                return ma.containsMouse ? bgColor : Qt.rgba(1, 1, 1, 0.05);
+                return isActivelyHovered ? bgColor : Qt.rgba(1, 1, 1, 0.05);
             }
 
             property color paintBorder: {
@@ -788,7 +812,7 @@ PluginComponent {
                 if (isPrimary) {
                     return Qt.rgba(0.94, 0.26, 0.26, 0.3);
                 }
-                if (ma.containsMouse || applyLightModeFix) {
+                if (isActivelyHovered || applyLightModeFix) {
                     return Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3);
                 }
                 return Qt.rgba(1, 1, 1, 0.1);
@@ -853,7 +877,7 @@ PluginComponent {
                         width: 56
                         height: 56
                         radius: width / 2
-                        visible: !ma.containsMouse
+                        visible: !isActivelyHovered
                         color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.3) : (applyLightModeFix ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3) : Qt.rgba(1, 1, 1, 0.1))
                     }
 
@@ -887,8 +911,8 @@ PluginComponent {
                         id: shapeLoader
                         anchors.centerIn: parent
                         size: 94
-                        visible: ma.containsMouse
-                        running: ma.containsMouse
+                        visible: isActivelyHovered
+                        running: isActivelyHovered
                         color: isPrimary ? Qt.rgba(0.94, 0.26, 0.26, 0.4) : (applyLightModeFix ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.4) : Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3))
 
                         // Adjust DLoadingIndicator internal elapsed rate dynamically based on shapeAnimationSpeed
@@ -917,7 +941,7 @@ PluginComponent {
                             Scale {
                                 origin.x: 18
                                 origin.y: 18
-                                xScale: ma.containsMouse ? 1.1 : 1.0
+                                xScale: isActivelyHovered ? 1.1 : 1.0
                                 yScale: xScale
                                 Behavior on xScale {
                                     NumberAnimation {
@@ -933,7 +957,7 @@ PluginComponent {
                             anchors.centerIn: parent
                             name: iconCode
                             size: 36
-                            color: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
+                            color: applyLightModeFix ? "black" : (isActivelyHovered ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
                             Behavior on color {
                                 ColorAnimation {
                                     duration: 150 * root.speedMultiplier
@@ -954,7 +978,7 @@ PluginComponent {
                             anchors.fill: urlIconSrc
                             source: urlIconSrc
                             colorization: 1.0
-                            colorizationColor: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
+                            colorizationColor: applyLightModeFix ? "black" : (isActivelyHovered ? accentColor : (isPrimary ? Qt.rgba(1, 0.7, 0.7, 1) : Qt.rgba(1, 1, 1, 0.9)))
                             Behavior on colorizationColor {
                                 ColorAnimation {
                                     duration: 150 * root.speedMultiplier
@@ -963,7 +987,7 @@ PluginComponent {
                         }
 
                         SequentialAnimation {
-                            running: ma.containsMouse
+                            running: isActivelyHovered
                             loops: Animation.Infinite
                             PauseAnimation {
                                 duration: 2000 * root.speedMultiplier
@@ -1019,7 +1043,7 @@ PluginComponent {
                         id: labelText
                         anchors.centerIn: parent
                         text: label
-                        color: applyLightModeFix ? "black" : (ma.containsMouse ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7)))
+                        color: applyLightModeFix ? "black" : (isActivelyHovered ? "white" : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 1) : Qt.rgba(1, 1, 1, 0.7)))
                         font.pixelSize: Theme.fontSizeMedium
                         font.weight: Font.Medium
                         Behavior on color {
@@ -1035,8 +1059,8 @@ PluginComponent {
                     width: 22
                     height: 22
                     radius: Theme.cornerRadiusSmall || (Theme.cornerRadius / 2)
-                    color: (ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.1) : Qt.rgba(1, 1, 1, 0.05))
-                    border.color: (ma.containsMouse || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
+                    color: (isActivelyHovered || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.1) : Qt.rgba(1, 1, 1, 0.05))
+                    border.color: (isActivelyHovered || applyLightModeFix) ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5) : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.3) : Qt.rgba(1, 1, 1, 0.15))
                     border.width: 1
                     Behavior on color {
                         ColorAnimation {
@@ -1051,7 +1075,7 @@ PluginComponent {
                     StyledText {
                         anchors.centerIn: parent
                         text: shortcutKey
-                        color: applyLightModeFix ? "black" : (ma.containsMouse ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4)))
+                        color: applyLightModeFix ? "black" : (isActivelyHovered ? accentColor : (isPrimary ? Qt.rgba(1, 0.8, 0.8, 0.9) : Qt.rgba(1, 1, 1, 0.4)))
                         font.pixelSize: Theme.fontSizeSmall
                         font.weight: Font.Bold
                         Behavior on color {

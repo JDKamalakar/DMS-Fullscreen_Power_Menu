@@ -695,7 +695,7 @@ PluginSettings {
                 }
 
                 SettingsToggleItem {
-                    iconName: "settings_suggest"
+                    iconName: "developer_board"
                     title: "Show UEFI / BIOS Setup"
                     description: "Show the reboot to UEFI / BIOS firmware setup button"
                     settingKey: "showFirmware"
@@ -904,7 +904,7 @@ PluginSettings {
                 }
 
                 CommandFieldItem {
-                    iconName: "settings_suggest"
+                    iconName: "developer_board"
                     title: "Firmware Setup Command"
                     description: "Command executed to reboot directly into UEFI / BIOS firmware setup"
                     settingKey: "firmwareCommand"
